@@ -214,7 +214,7 @@ function OTP() {
       "userId"
     );
 
-    navigate("/login");
+    navigate("/signup");
   };
 
   return (
