@@ -340,7 +340,7 @@ function Navbar() {
                 flex
               "
             >
-           <FaLightbulb className="text-2xl text-white" /><span className="text-green-600">
+           <FaLightbulb className="text-2xl text-green-900" /><span className="text-green-600">
                 LIGHTS
               </span>
             </Link>

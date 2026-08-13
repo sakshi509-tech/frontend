@@ -686,7 +686,7 @@ function Cart() {
                     )}
                   </span>
                 </div>
-
+<br />
                  <a
                 href="https://wa.me/917230910907?text=Hello%20I%20want%20to%20inquire%20about%20your%20products"
                 target="_blank"
@@ -695,7 +695,7 @@ function Cart() {
               >
                 💬 WhatsApp Inquiry
               </a>
-
+<br />
                 <button
                   onClick={() =>
                     navigate("/products")

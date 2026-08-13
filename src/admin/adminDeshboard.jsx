@@ -387,47 +387,7 @@ function AdminDashboard() {
           </div>
         </div>
 
-        {/* ORDERS */}
-        <div className="rounded-2xl bg-white p-6 shadow-md">
-          <div className="flex items-center justify-between">
 
-            <div>
-              <p className="font-medium text-gray-500">
-                Total Orders
-              </p>
-
-              <h2 className="mt-2 text-3xl font-bold text-gray-800">
-                {dashboard.totalOrders}
-              </h2>
-            </div>
-
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-purple-100 text-2xl text-purple-600">
-              <FaShoppingCart />
-            </div>
-
-          </div>
-        </div>
-
-        {/* REVENUE */}
-        <div className="rounded-2xl bg-white p-6 shadow-md">
-          <div className="flex items-center justify-between">
-
-            <div>
-              <p className="font-medium text-gray-500">
-                Total Revenue
-              </p>
-
-              <h2 className="mt-2 text-3xl font-bold text-gray-800">
-                ₹{dashboard.totalRevenue}
-              </h2>
-            </div>
-
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-orange-100 text-2xl text-orange-600">
-              <FaRupeeSign />
-            </div>
-
-          </div>
-        </div>
 
       </div>
 
