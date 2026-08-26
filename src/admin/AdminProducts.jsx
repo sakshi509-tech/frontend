@@ -507,8 +507,7 @@ function AdminProducts() {
 
         const uploadResponse = await api.post(
           "/upload/single",
-          imageData,
-          { headers: { "Content-Type": "multipart/form-data" } }
+          imageData
         );
 
         imageUrl = uploadResponse.data?.image?.url || "";

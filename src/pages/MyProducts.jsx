@@ -94,9 +94,7 @@ function MyProducts() {
         payload.append("stock", form.stock ? String(Number(form.stock)) : "0");
         payload.append("image", form.image);
 
-        await api.post("/product/submit", payload, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await api.post("/product/submit", payload);
       }
 
       setForms([{ ...initialForm }]);
