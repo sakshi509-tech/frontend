@@ -24,7 +24,7 @@ import {
 // ======================================================
 
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://backend-5-j2f0.onrender.com/api";
+  import.meta.env.VITE_API_URL || "https://backend-6-xzej.onrender.com/api";
 
 // ======================================================
 // FALLBACK IMAGE

@@ -43,7 +43,7 @@ const getImageUrl = (image) => {
 
   const baseUrl =
     import.meta.env.VITE_API_URL ||
-    "https://backend-5-j2f0.onrender.com/api";
+    "https://backend-6-xzej.onrender.com/api";
 
   return `${baseUrl.replace(/\/api\/?$/, "")}/${String(
     image

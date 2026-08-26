@@ -16,7 +16,7 @@ import {
   FaYoutube,
 } from "react-icons/fa";
 
-const API_URL = "https://backend-5-j2f0.onrender.com";
+const API_URL = "https://backend-6-xzej.onrender.com";
 
 const defaultFooter = {
   companyName: "MyStore",
