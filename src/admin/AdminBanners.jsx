@@ -95,13 +95,12 @@ function AdminBanners() {
   // AUTH CONFIG
   // ======================================================
 
-  const getConfig = () => {
+  const getConfig = (includeJson = true) => {
     const token = localStorage.getItem("token");
 
     return {
       headers: {
-        "Content-Type": "application/json",
-
+        ...(includeJson ? { "Content-Type": "application/json" } : {}),
         ...(token
           ? {
               Authorization: `Bearer ${token}`,
@@ -158,7 +157,7 @@ function AdminBanners() {
       const response = await axios.post(
         `${API_URL}/upload/single`,
         payload,
-        getConfig()
+        getConfig(false)
       );
       const imageUrl = response.data?.image?.url;
       if (!imageUrl) throw new Error("Image URL was not returned");

@@ -10,6 +10,7 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  UserPlus,
 } from "lucide-react";
 
 import api from "../api/axios";
@@ -24,6 +25,26 @@ const AdminUser = () => {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
   const [search, setSearch] = useState("");
+  const [showAdminForm, setShowAdminForm] = useState(false);
+  const [adminForm, setAdminForm] = useState({ name: "", phone: "" });
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
+
+  const createAdmin = async (event) => {
+    event.preventDefault();
+
+    try {
+      setCreatingAdmin(true);
+      const response = await api.post("/admin/create", adminForm);
+      toast.success(response.data?.message || "Admin created successfully");
+      setAdminForm({ name: "", phone: "" });
+      setShowAdminForm(false);
+      await getUsers();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to create admin");
+    } finally {
+      setCreatingAdmin(false);
+    }
+  };
 
   // =====================================================
   // GET ALL USERS
@@ -217,24 +238,63 @@ const AdminUser = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={getUsers}
-            disabled={loading}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw
-              size={18}
-              className={
-                loading
-                  ? "animate-spin"
-                  : ""
-              }
-            />
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setShowAdminForm((visible) => !visible)}
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+            >
+              <UserPlus size={18} />
+              Add Admin
+            </button>
 
-            {loading ? "Loading..." : "Refresh"}
-          </button>
+            <button
+              type="button"
+              onClick={getUsers}
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+              {loading ? "Loading..." : "Refresh"}
+            </button>
+          </div>
         </div>
+
+        {showAdminForm && (
+          <form onSubmit={createAdmin} className="mb-6 rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
+            <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <label className="text-sm font-semibold text-gray-700">
+                Name
+                <input
+                  required
+                  value={adminForm.name}
+                  onChange={(event) => setAdminForm({ ...adminForm, name: event.target.value })}
+                  className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 font-normal outline-none focus:border-blue-500"
+                  placeholder="Admin name"
+                />
+              </label>
+              <label className="text-sm font-semibold text-gray-700">
+                Phone
+                <input
+                  required
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={adminForm.phone}
+                  onChange={(event) => setAdminForm({ ...adminForm, phone: event.target.value.replace(/\D/g, "") })}
+                  className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 font-normal outline-none focus:border-blue-500"
+                  placeholder="10 digit phone"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={creatingAdmin}
+                className="rounded-xl bg-green-600 px-5 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+              >
+                {creatingAdmin ? "Creating..." : "Create Admin"}
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* =================================================
             STATS
