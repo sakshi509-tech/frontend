@@ -13,6 +13,11 @@ const initialForm = {
   salePrice: "",
   stock: "",
   image: null,
+  isDropshipping: false,
+  supplierName: "",
+  supplierProductId: "",
+  supplierUrl: "",
+  supplierPrice: "",
 };
 
 function MyProducts() {
@@ -79,6 +84,11 @@ function MyProducts() {
         toast.error("Complete name, description, category, price and image for every product");
         return;
       }
+
+      if (form.isDropshipping && (!form.supplierName.trim() || !form.supplierUrl.trim() || form.supplierPrice === "" || Number(form.supplierPrice) < 0)) {
+        toast.error("Complete supplier name, URL and supplier price for dropshipping products");
+        return;
+      }
     }
 
     try {
@@ -92,6 +102,11 @@ function MyProducts() {
         payload.append("price", String(Number(form.price)));
         payload.append("salePrice", form.salePrice ? String(Number(form.salePrice)) : "");
         payload.append("stock", form.stock ? String(Number(form.stock)) : "0");
+        payload.append("isDropshipping", String(form.isDropshipping));
+        payload.append("supplierName", form.supplierName.trim());
+        payload.append("supplierProductId", form.supplierProductId.trim());
+        payload.append("supplierUrl", form.supplierUrl.trim());
+        payload.append("supplierPrice", form.isDropshipping ? String(Number(form.supplierPrice)) : "0");
         payload.append("image", form.image);
 
         await api.post("/product/submit", payload);
@@ -156,6 +171,18 @@ function MyProducts() {
                       <input name="salePrice" value={form.salePrice} onChange={(event) => handleChange(index, event)} type="number" min="0" placeholder="Sale price" className="h-11 rounded-xl border border-gray-200 px-3 outline-none focus:border-blue-500" />
                       <input name="stock" value={form.stock} onChange={(event) => handleChange(index, event)} type="number" min="0" placeholder="Stock" className="h-11 rounded-xl border border-gray-200 px-3 outline-none focus:border-blue-500" />
                     </div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <input name="isDropshipping" type="checkbox" checked={form.isDropshipping} onChange={(event) => handleChange(index, event)} />
+                      This is a dropshipping product
+                    </label>
+                    {form.isDropshipping && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <input name="supplierName" value={form.supplierName} onChange={(event) => handleChange(index, event)} placeholder="Supplier name *" className="h-11 rounded-xl border border-gray-200 px-3 outline-none focus:border-blue-500" />
+                        <input name="supplierProductId" value={form.supplierProductId} onChange={(event) => handleChange(index, event)} placeholder="Supplier product ID" className="h-11 rounded-xl border border-gray-200 px-3 outline-none focus:border-blue-500" />
+                        <input name="supplierUrl" value={form.supplierUrl} onChange={(event) => handleChange(index, event)} type="url" placeholder="Supplier product URL *" className="h-11 rounded-xl border border-gray-200 px-3 outline-none focus:border-blue-500" />
+                        <input name="supplierPrice" value={form.supplierPrice} onChange={(event) => handleChange(index, event)} type="number" min="0" placeholder="Supplier price *" className="h-11 rounded-xl border border-gray-200 px-3 outline-none focus:border-blue-500" />
+                      </div>
+                    )}
                     <div>
                       <label htmlFor={`product-image-${index}`} className="mb-2 block text-sm font-bold text-gray-700">Product image *</label>
                       <input id={`product-image-${index}`} name="image" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => handleImageChange(index, event)} className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm" />
