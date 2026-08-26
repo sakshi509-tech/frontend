@@ -32,10 +32,13 @@ const getImageUrl = (image) => {
 
   if (
     image.startsWith("data:") ||
-    image.startsWith("http://") ||
     image.startsWith("https://")
   ) {
     return image;
+  }
+
+  if (image.startsWith("http://")) {
+    return image.replace("http://", "https://");
   }
 
   const baseUrl =

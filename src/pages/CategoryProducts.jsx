@@ -37,11 +37,14 @@ const getImageUrl = (image) => {
 
   if (
     imageString.startsWith("data:") ||
-    imageString.startsWith("http://") ||
     imageString.startsWith("https://") ||
     imageString.startsWith("data:")
   ) {
     return imageString;
+  }
+
+  if (imageString.startsWith("http://")) {
+    return imageString.replace("http://", "https://");
   }
 
   const apiUrl =

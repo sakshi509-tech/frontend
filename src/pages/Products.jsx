@@ -43,7 +43,7 @@ const getImageUrl = (image) => {
 
   // Already complete URL
   if (/^https?:\/\//i.test(value)) {
-    return value;
+    return value.replace(/^http:\/\//i, "https://");
   }
 
   const baseUrl = (

@@ -189,10 +189,13 @@ function Cart() {
     // Full URL
     if (
       imageString.startsWith("data:") ||
-      imageString.startsWith("http://") ||
       imageString.startsWith("https://")
     ) {
       return imageString;
+    }
+
+    if (imageString.startsWith("http://")) {
+      return imageString.replace("http://", "https://");
     }
 
     const apiUrl =
