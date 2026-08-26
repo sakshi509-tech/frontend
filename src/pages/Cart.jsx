@@ -197,7 +197,7 @@ function Cart() {
 
     const apiUrl =
       import.meta.env.VITE_API_URL ||
-      "https://backend-4-c0jh.onrender.com/api";
+      "https://backend-5-j2f0.onrender.com/api";
 
     const baseUrl = apiUrl.replace(/\/api\/?$/, "");
 
