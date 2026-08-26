@@ -22,7 +22,7 @@ import { toast } from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 
-const API_URL = "https://backend-2-ubju.onrender.com";
+const API_URL = "https://backend-3-mmif.onrender.com";
 
 function Navbar() {
   const navigate = useNavigate();

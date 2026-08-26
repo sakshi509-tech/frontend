@@ -3,7 +3,7 @@ import axios from "axios";
 const api = axios.create({
   baseURL:
     import.meta.env.VITE_API_URL ||
-    "https://backend-2-ubju.onrender.com/api",
+    "https://backend-3-mmif.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
