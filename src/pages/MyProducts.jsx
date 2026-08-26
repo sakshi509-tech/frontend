@@ -101,6 +101,10 @@ function MyProducts() {
       toast.success(`${forms.length} product${forms.length > 1 ? "s" : ""} sent for admin approval`);
       await loadData();
     } catch (error) {
+      console.error(
+        "PRODUCT SUBMIT ERROR:",
+        error?.response?.data || error
+      );
       toast.error(error?.response?.data?.message || "Product submission failed");
     } finally {
       setSaving(false);
