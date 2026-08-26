@@ -11,6 +11,7 @@ import {
   XCircle,
   Loader2,
   UserPlus,
+  ShieldOff,
 } from "lucide-react";
 
 import api from "../api/axios";
@@ -139,6 +140,33 @@ const AdminUser = () => {
         error?.response?.data?.message ||
           "Failed to delete user"
       );
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleRoleChange = async (user) => {
+    if (!user?._id) {
+      toast.error("Invalid user ID");
+      return;
+    }
+
+    const nextRole = user.role === "admin" ? "user" : "admin";
+    const action = nextRole === "admin" ? "make admin" : "remove admin access from";
+
+    if (!window.confirm(`Are you sure you want to ${action} ${user.name || user.phone || "this user"}?`)) {
+      return;
+    }
+
+    try {
+      setDeleting(user._id);
+      const response = await api.patch(`/admin/users/${user._id}/role`, {
+        role: nextRole,
+      });
+      toast.success(response.data?.message || "User role updated successfully");
+      await getUsers();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to update user role");
     } finally {
       setDeleting(null);
     }
@@ -661,42 +689,30 @@ const AdminUser = () => {
 
                           <div className="flex justify-end">
 
-                            {isAdmin ? (
-
-                              <span className="text-xs font-semibold text-gray-400 px-3">
-                                Protected
-                              </span>
-
-                            ) : (
-
+                            <div className="flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handleDelete(user)
-                                }
+                                onClick={() => handleRoleChange(user)}
                                 disabled={isDeleting}
-                                className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Delete user"
+                                className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold transition disabled:opacity-50 ${isAdmin ? "bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white" : "bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white"}`}
+                                title={isAdmin ? "Remove admin access" : "Make admin"}
                               >
-
-                                {isDeleting ? (
-
-                                  <Loader2
-                                    size={18}
-                                    className="animate-spin"
-                                  />
-
-                                ) : (
-
-                                  <Trash2
-                                    size={18}
-                                  />
-
-                                )}
-
+                                {isDeleting ? <Loader2 size={16} className="animate-spin" /> : isAdmin ? <ShieldOff size={16} /> : <ShieldCheck size={16} />}
+                                {isAdmin ? "Remove Admin" : "Make Admin"}
                               </button>
 
-                            )}
+                              {!isAdmin && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(user)}
+                                  disabled={isDeleting}
+                                  className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Delete user"
+                                >
+                                  {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                                </button>
+                              )}
+                            </div>
 
                           </div>
 
