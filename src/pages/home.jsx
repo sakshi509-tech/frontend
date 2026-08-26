@@ -1,322 +1,1176 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import axios from "axios";
-import Navbar from "../component/navbar";
-import Footer from "../component/footer";
+import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = "https://e-comm-4-39jg.onrender.com/api";
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Star,
+  MessageCircle,
+  Package,
+  Truck,
+  ShieldCheck,
+  Headphones,
+  Loader2,
+  Eye,
+} from "lucide-react";
+
+import { toast } from "react-hot-toast";
+import api from "../api/axios";
+
+// =====================================================
+// IMAGE URL HELPER
+// =====================================================
+
+const getImageUrl = (image) => {
+  if (!image) return "";
+
+  // If image is an object
+  if (typeof image === "object") {
+    image =
+      image.url ||
+      image.secure_url ||
+      image.path ||
+      image.image ||
+      "";
+  }
+
+  if (!image) return "";
+
+  const imageString = String(image);
+
+  // Already full URL
+  if (
+    imageString.startsWith("data:") ||
+    imageString.startsWith("http://") ||
+    imageString.startsWith("https://")
+  ) {
+    return imageString;
+  }
+
+  const baseUrl =
+    import.meta.env.VITE_API_URL ||
+    "https://backend-2-ubju.onrender.com/api";
+
+  // Remove /api from API URL
+  const serverUrl = baseUrl.replace(/\/api\/?$/, "");
+
+  return `${serverUrl}/${imageString.replace(/^\/+/, "")}`;
+};
+
+// =====================================================
+// PRODUCT CARD
+// =====================================================
+
+function ProductCard({ product, onInquiry }) {
+  const navigate = useNavigate();
+
+  const productId = product?._id || product?.id;
+
+  const image = getImageUrl(
+    product?.image || product?.images?.[0]
+  );
+
+  const price = Number(product?.price || 0);
+
+  const oldPrice = Number(
+    product?.oldPrice ||
+      product?.mrp ||
+      product?.comparePrice ||
+      0
+  );
+
+  const rating = Number(product?.rating || 0);
+
+  const discount =
+    oldPrice > price && price > 0
+      ? Math.round(((oldPrice - price) / oldPrice) * 100)
+      : 0;
+
+  // ===================================================
+  // PRODUCT CLICK
+  // ===================================================
+
+  const handleProductClick = () => {
+    if (!productId) {
+      toast.error("Product not available");
+      return;
+    }
+
+    navigate(`/products/${productId}`);
+  };
+
+  // ===================================================
+  // RENDER
+  // ===================================================
+
+  return (
+    <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+      {/* =================================================
+          IMAGE
+      ================================================= */}
+
+      <div className="relative bg-gray-100 aspect-square overflow-hidden">
+        {image ? (
+          <img
+            src={image}
+            alt={product?.name || "Product"}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
+            <Package size={48} />
+          </div>
+        )}
+
+        {/* Discount */}
+        {discount > 0 && (
+          <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-red-500 text-white text-xs font-bold">
+            {discount}% OFF
+          </span>
+        )}
+
+        {/* Wishlist */}
+        <button
+          type="button"
+          onClick={() =>
+            toast("Wishlist feature coming next")
+          }
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/95 backdrop-blur flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-red-50 shadow-sm transition"
+        >
+          <Heart size={18} />
+        </button>
+
+        {/* Quick View */}
+        <button
+          type="button"
+          onClick={handleProductClick}
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 translate-y-14 group-hover:translate-y-0 transition-all duration-300 bg-white text-gray-800 px-4 py-2 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2"
+        >
+          <Eye size={15} />
+          Quick View
+        </button>
+      </div>
+
+      {/* =================================================
+          CONTENT
+      ================================================= */}
+
+      <div className="p-4">
+        {/* Brand */}
+        {product?.brand && (
+          <p className="text-[11px] uppercase tracking-wider text-blue-600 font-bold mb-1">
+            {product.brand}
+          </p>
+        )}
+
+        {/* Product Name */}
+        <button
+          type="button"
+          onClick={handleProductClick}
+          className="text-left w-full"
+        >
+          <h3 className="font-bold text-gray-900 line-clamp-2 min-h-[48px] group-hover:text-blue-600 transition">
+            {product?.name || "Product Name"}
+          </h3>
+        </button>
+
+        {/* Rating */}
+        <div className="flex items-center gap-1 mt-2">
+          <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                size={13}
+                className={
+                  star <= rating
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-gray-300"
+                }
+              />
+            ))}
+          </div>
+
+          {rating > 0 && (
+            <span className="text-xs text-gray-500">
+              {rating.toFixed(1)}
+            </span>
+          )}
+        </div>
+
+        {/* Price */}
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-xl font-extrabold text-gray-900">
+            ₹{price.toLocaleString("en-IN")}
+          </span>
+
+          {oldPrice > price && (
+            <span className="text-sm text-gray-400 line-through">
+              ₹{oldPrice.toLocaleString("en-IN")}
+            </span>
+          )}
+        </div>
+
+        {/* WhatsApp Inquiry */}
+        <button
+          type="button"
+          onClick={() => onInquiry(product)}
+          className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition"
+        >
+          <MessageCircle size={17} />
+          WhatsApp Inquiry
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================
+// HOME
+// =====================================================
 
 function Home() {
+  const navigate = useNavigate();
+
+  // ===================================================
+  // STATES
+  // ===================================================
+
+  const [banners, setBanners] = useState([]);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [navbar, setNavbar] = useState(null);
+  const [menu, setMenu] = useState([]);
+  const [whatsappNumber, setWhatsappNumber] = useState("");
 
-  const getCategories = async () => {
+  const [loading, setLoading] = useState(true);
+  const [bannerIndex, setBannerIndex] = useState(0);
+  const [productLoading, setProductLoading] = useState(false);
+
+  // ===================================================
+  // LOAD BANNERS
+  // ===================================================
+
+  const loadBanners = async () => {
     try {
-      setLoadingCategories(true);
+      const response = await api.get("/banner");
 
-      const { data } = await axios.get(
-        `${API_URL}/category/all`
+      const data =
+        response.data?.banners ||
+        response.data?.data ||
+        response.data;
+
+      if (Array.isArray(data)) {
+        setBanners(data);
+      } else {
+        setBanners([]);
+      }
+    } catch (error) {
+      console.log(
+        "Banner error:",
+        error?.response?.data || error?.message
       );
 
-      console.log("Category Response:", data);
+      setBanners([]);
+    }
+  };
 
-      if (data.success) {
-        const categoryData =
-          data.categories ||
-          data.data ||
-          data.category ||
-          [];
+  // ===================================================
+  // LOAD CATEGORIES
+  // ===================================================
 
-        setCategories(
-          Array.isArray(categoryData) ? categoryData : []
-        );
+  const loadCategories = async () => {
+    try {
+      const response = await api.get("/category");
+
+      const data =
+        response.data?.categories ||
+        response.data?.data ||
+        response.data;
+
+      if (Array.isArray(data)) {
+        setCategories(data);
       } else {
         setCategories([]);
       }
     } catch (error) {
-      console.error("Category Error:", error);
+      console.log(
+        "Category error:",
+        error?.response?.data || error?.message
+      );
+
       setCategories([]);
-    } finally {
-      setLoadingCategories(false);
     }
   };
 
-  const getProducts = async () => {
+  // ===================================================
+  // LOAD PRODUCTS
+  // ===================================================
+
+  const loadProducts = async () => {
     try {
-      setLoadingProducts(true);
+      setProductLoading(true);
 
-      const { data } = await axios.get(
-        `${API_URL}/product/all`
-      );
+      const response = await api.get("/product/all");
 
-      console.log("Product Response:", data);
+      const data =
+        response.data?.products ||
+        response.data?.data ||
+        response.data;
 
-      if (data.success) {
-        const productData =
-          data.products ||
-          data.data ||
-          data.product ||
-          [];
-
-        setProducts(
-          Array.isArray(productData) ? productData : []
-        );
+      if (Array.isArray(data)) {
+        setProducts(data);
       } else {
         setProducts([]);
       }
     } catch (error) {
-      console.error("Product Error:", error);
+      console.log(
+        "Products error:",
+        error?.response?.data || error?.message
+      );
+
       setProducts([]);
     } finally {
-      setLoadingProducts(false);
+      setProductLoading(false);
     }
   };
 
+  // ===================================================
+  // LOAD NAVBAR
+  // ===================================================
+
+  const loadNavbar = async () => {
+    try {
+      const response = await api.get("/navbar/all");
+
+      const data =
+        response.data?.navbar ||
+        response.data?.data ||
+        response.data;
+
+      if (data) {
+        setNavbar(data);
+      }
+    } catch (error) {
+      console.log(
+        "Navbar error:",
+        error?.response?.data || error?.message
+      );
+    }
+  };
+
+  // ===================================================
+  // LOAD MENU
+  // ===================================================
+
+  const loadMenu = async () => {
+    try {
+      const response = await api.get("/menu");
+
+      const data =
+        response.data?.menus ||
+        response.data?.menu ||
+        response.data?.data ||
+        response.data;
+
+      if (Array.isArray(data)) {
+        setMenu(data);
+      } else {
+        setMenu([]);
+      }
+    } catch (error) {
+      console.log(
+        "Menu error:",
+        error?.response?.data || error?.message
+      );
+
+      setMenu([]);
+    }
+  };
+
+  // ===================================================
+  // LOAD WHATSAPP SETTINGS
+  // ===================================================
+
+  const loadWhatsappSettings = async () => {
+    try {
+      const response = await api.get("/whatsapp/settings");
+
+      const data =
+        response.data?.settings ||
+        response.data?.data ||
+        response.data;
+
+      if (data) {
+        setWhatsappNumber(
+          data.phone ||
+            data.phoneNumber ||
+            data.whatsappNumber ||
+            data.number ||
+            ""
+        );
+      }
+    } catch (error) {
+      console.log(
+        "WhatsApp settings error:",
+        error?.response?.data || error?.message
+      );
+    }
+  };
+
+  // ===================================================
+  // LOAD ALL HOME DATA
+  // ===================================================
+
   useEffect(() => {
-    getCategories();
-    getProducts();
+    const loadHome = async () => {
+      setLoading(true);
+
+      await Promise.all([
+        loadBanners(),
+        loadCategories(),
+        loadProducts(),
+        loadNavbar(),
+        loadMenu(),
+        loadWhatsappSettings(),
+      ]);
+
+      setLoading(false);
+    };
+
+    loadHome();
   }, []);
 
-  return (
-    <div className="min-h-screen bg-gray-100 text-black dark:bg-gray-900 dark:text-white">
-      <Navbar />
+  // ===================================================
+  // AUTO BANNER SLIDER
+  // ===================================================
 
-      <section className="relative overflow-hidden bg-green-50 dark:bg-gray-900">
-        <div className="mx-auto grid min-h-[600px] max-w-7xl items-center gap-10 px-6 py-12 lg:grid-cols-2">
-          <div className="relative z-10">
-            <Link
-              to="/products"
-              className="inline-flex items-center rounded-full bg-white px-5 py-2 text-sm font-semibold text-green-700 shadow-md dark:bg-gray-800 dark:text-green-400"
-            >
-              🛍️ Best Quality, Best Prices
-            </Link>
+  useEffect(() => {
+    if (banners.length <= 1) {
+      return;
+    }
 
-            <h1 className="mt-6 text-4xl font-extrabold leading-tight text-gray-900 sm:text-5xl lg:text-6xl dark:text-white">
-              Welcome to
-              <span className="block text-green-700 dark:text-green-400">
-                Our Store
-              </span>
-            </h1>
+    const interval = setInterval(() => {
+      setBannerIndex(
+        (previous) => (previous + 1) % banners.length
+      );
+    }, 5000);
 
-            <p className="mt-5 max-w-xl text-lg leading-8 text-gray-600 dark:text-gray-300 sm:text-xl">
-              Find the best products at the best prices.
-              Shop your favorite products with us and enjoy
-              fast delivery and secure payment.
-            </p>
+    return () => clearInterval(interval);
+  }, [banners.length]);
 
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link
-                to="/products"
-                className="rounded-lg bg-green-700 px-7 py-3.5 font-semibold text-white shadow-lg transition hover:bg-green-800"
-              >
-                🛒 Shop Now
-              </Link>
+  // ===================================================
+  // NEXT BANNER
+  // ===================================================
 
-              <a
-                href="https://wa.me/917230910907?text=Hello%20I%20want%20to%20inquire%20about%20your%20products"
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-lg border-2 border-green-700 bg-white px-7 py-3.5 font-semibold text-green-700 shadow-md transition hover:bg-green-700 hover:text-white dark:bg-gray-800 dark:text-green-400"
-              >
-                💬 WhatsApp Inquiry
-              </a>
-            </div>
+  const nextBanner = () => {
+    if (!banners.length) return;
 
-            <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl shadow dark:bg-gray-800">
-                  🚚
-                </div>
-                <div>
-                  <h3 className="font-bold">Free Delivery</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Fast delivery
-                  </p>
-                </div>
-              </div>
+    setBannerIndex(
+      (previous) => (previous + 1) % banners.length
+    );
+  };
 
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl shadow dark:bg-gray-800">
-                  🛡️
-                </div>
-                <div>
-                  <h3 className="font-bold">Secure Payment</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    100% Protected
-                  </p>
-                </div>
-              </div>
+  // ===================================================
+  // PREVIOUS BANNER
+  // ===================================================
 
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl shadow dark:bg-gray-800">
-                  🎧
-                </div>
-                <div>
-                  <h3 className="font-bold">24/7 Support</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    We're here for you
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+  const previousBanner = () => {
+    if (!banners.length) return;
 
-          <div className="relative flex items-center justify-center">
-            <div className="absolute h-[300px] w-[300px] rounded-full bg-green-200/70 blur-2xl dark:bg-green-900/40 sm:h-[450px] sm:w-[450px]" />
+    setBannerIndex((previous) =>
+      previous === 0
+        ? banners.length - 1
+        : previous - 1
+    );
+  };
 
-            <img
-              src="/b1.webp"
-              alt="E-commerce shopping"
-              className="relative z-10 w-full max-w-[600px] object-contain drop-shadow-2xl transition duration-500 hover:scale-105"
+  // ===================================================
+  // WHATSAPP INQUIRY
+  // ===================================================
+
+  const handleInquiry = async (product) => {
+    const productId = product?._id || product?.id;
+
+    // Backend inquiry
+    try {
+      if (productId) {
+        await api.post("/whatsapp/product-inquiry", {
+          productId,
+          productName: product?.name || "",
+          price: product?.price || 0,
+        });
+      }
+    } catch (error) {
+      console.log(
+        "Inquiry API error:",
+        error?.response?.data || error?.message
+      );
+    }
+
+    // WhatsApp number
+    let number = String(whatsappNumber || "").replace(
+      /\D/g,
+      ""
+    );
+
+    if (!number) {
+      toast.error("WhatsApp number is not configured");
+      return;
+    }
+
+    // India number
+    if (number.length === 10) {
+      number = `91${number}`;
+    }
+
+    const message = encodeURIComponent(
+      `Hello, I am interested in this product.
+
+Product: ${product?.name || ""}
+
+Price: ₹${product?.price || ""}
+
+Please share more details.`
+    );
+
+    const whatsappUrl =
+      `https://wa.me/${number}?text=${message}`;
+
+    window.open(
+      whatsappUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  // ===================================================
+  // CATEGORY CLICK
+  // ===================================================
+
+  const handleCategoryClick = (category) => {
+    if (!category) return;
+
+    const slug = category?.slug;
+
+    if (slug) {
+      navigate(`/categories/${slug}`);
+      return;
+    }
+
+    const categoryId =
+      category?._id || category?.id;
+
+    if (categoryId) {
+      navigate(`/category/${categoryId}`);
+    }
+  };
+
+  // ===================================================
+  // SITE NAME
+  // ===================================================
+
+  const siteName =
+    navbar?.siteName ||
+    navbar?.name ||
+    navbar?.companyName ||
+    "MyStore";
+
+  // ===================================================
+  // CURRENT BANNER
+  // ===================================================
+
+  const currentBanner = banners[bannerIndex];
+
+  const bannerImage = getImageUrl(
+    currentBanner?.image ||
+      currentBanner?.bannerImage ||
+      currentBanner?.desktopImage
+  );
+
+  // ===================================================
+  // LOADING
+  // ===================================================
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-lg">
+            <Loader2
+              size={28}
+              className="animate-spin"
             />
           </div>
+
+          <p className="mt-4 text-gray-600 font-medium">
+            Loading store...
+          </p>
         </div>
-      </section>
+      </div>
+    );
+  }
 
-      <section className="mx-auto max-w-7xl px-4 py-12">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold">
-              Categories
-            </h2>
-            <p className="mt-1 text-gray-500 dark:text-gray-400">
-              Shop by category
-            </p>
-          </div>
+  // ===================================================
+  // RETURN
+  // ===================================================
 
-          <Link
-            to="/category"
-            className="font-semibold text-green-600 hover:text-green-700"
-          >
-            View All →
-          </Link>
-        </div>
+  return (
+    <main className="bg-gray-50 min-h-screen">
 
-        {loadingCategories ? (
-          <div className="py-10 text-center text-gray-500">
-            Loading categories...
-          </div>
-        ) : categories.length === 0 ? (
-          <div className="rounded-xl bg-white p-8 text-center dark:bg-gray-800">
-            No categories found
+      {/* =================================================
+          HERO
+      ================================================= */}
+
+      <section className="relative overflow-hidden">
+        {banners.length > 0 ? (
+          <div className="relative w-full">
+
+            {/* Banner */}
+            <div className="relative h-[420px] sm:h-[480px] lg:h-[560px] overflow-hidden">
+
+              {bannerImage ? (
+                <img
+                  src={bannerImage}
+                  alt={
+                    currentBanner?.title ||
+                    "Banner"
+                  }
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700" />
+              )}
+
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/35" />
+
+              {/* Content */}
+              <div className="absolute inset-0 flex items-center">
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+
+                  <div className="max-w-2xl text-white">
+
+                    {currentBanner?.subtitle && (
+                      <p className="text-sm sm:text-base font-semibold uppercase tracking-[0.2em] mb-4 text-white/90">
+                        {currentBanner.subtitle}
+                      </p>
+                    )}
+
+                    <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black leading-tight">
+                      {currentBanner?.title ||
+                        `Welcome to ${siteName}`}
+                    </h1>
+
+                    {currentBanner?.description && (
+                      <p className="mt-5 text-base sm:text-lg text-white/90 max-w-xl leading-relaxed">
+                        {currentBanner.description}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap gap-3 mt-7">
+
+                      <Link
+                        to={
+                          currentBanner?.link ||
+                            currentBanner?.buttonUrl ||
+                          "/products"
+                        }
+                        className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-100 transition shadow-lg"
+                      >
+                        Shop Now
+                        <ArrowRight size={18} />
+                      </Link>
+
+                      <Link
+                        to="/categories"
+                        className="inline-flex items-center gap-2 px-6 py-3.5 bg-white/10 backdrop-blur border border-white/30 text-white rounded-xl font-bold hover:bg-white/20 transition"
+                      >
+                        Explore Categories
+                      </Link>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Slider Buttons */}
+              {banners.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={previousBanner}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center shadow-lg"
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={nextBanner}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center shadow-lg"
+                  >
+                    <ChevronRight size={22} />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Dots */}
+            {banners.length > 1 && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                {banners.map((_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() =>
+                      setBannerIndex(index)
+                    }
+                    className={`h-2 rounded-full transition-all ${
+                      index === bannerIndex
+                        ? "w-8 bg-white"
+                        : "w-2 bg-white/50"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {categories.slice(0, 6).map((category) => (
-              <Link
-                key={category._id}
-                to={`/category/${category._id}`}
-                className="group overflow-hidden rounded-xl bg-white shadow-md transition hover:-translate-y-1 hover:shadow-lg dark:bg-gray-800"
-              >
-                <div className="h-32 overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  {category.image ? (
-                    <img
-                      src={category.image}
-                      alt={category.name || "Category"}
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-4xl">
-                      🛍️
-                    </div>
-                  )}
-                </div>
 
-                <div className="p-3 text-center">
-                  <h3 className="font-semibold">
-                    {category.name || "Category"}
-                  </h3>
-                </div>
-              </Link>
-            ))}
+          /* Fallback Hero */
+
+          <div className="relative bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+
+              <div className="max-w-2xl text-white">
+
+                <p className="text-blue-100 font-bold uppercase tracking-widest text-sm">
+                  Welcome to {siteName}
+                </p>
+
+                <h1 className="mt-4 text-5xl sm:text-6xl lg:text-7xl font-black leading-tight">
+                  Discover products you'll love.
+                </h1>
+
+                <p className="mt-6 text-lg text-blue-100 max-w-xl">
+                  Browse our collection of quality
+                  products and find something
+                  perfect for you.
+                </p>
+
+                <Link
+                  to="/products"
+                  className="inline-flex items-center gap-2 mt-8 px-7 py-4 bg-white text-blue-700 rounded-xl font-bold hover:bg-gray-100 transition shadow-xl"
+                >
+                  Shop Now
+                  <ArrowRight size={19} />
+                </Link>
+
+              </div>
+            </div>
           </div>
         )}
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-16">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold">
-              Latest Products
-            </h2>
-            <p className="mt-1 text-gray-500 dark:text-gray-400">
-              Check out our latest products
-            </p>
+      {/* =================================================
+          FEATURES
+      ================================================= */}
+
+      <section className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x-0 lg:divide-x divide-gray-100">
+
+            {/* Fast Delivery */}
+            <div className="flex items-center gap-3 py-6 px-3 lg:px-6">
+              <div className="w-11 h-11 shrink-0 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Truck size={22} />
+              </div>
+
+              <div>
+                <p className="font-bold text-gray-900 text-sm">
+                  Fast Delivery
+                </p>
+
+                <p className="text-xs text-gray-500 mt-1">
+                  Quick & reliable
+                </p>
+              </div>
+            </div>
+
+            {/* Quality */}
+            <div className="flex items-center gap-3 py-6 px-3 lg:px-6">
+              <div className="w-11 h-11 shrink-0 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
+                <ShieldCheck size={22} />
+              </div>
+
+              <div>
+                <p className="font-bold text-gray-900 text-sm">
+                  Quality Products
+                </p>
+
+                <p className="text-xs text-gray-500 mt-1">
+                  Trusted products
+                </p>
+              </div>
+            </div>
+
+            {/* Collection */}
+            <div className="flex items-center gap-3 py-6 px-3 lg:px-6">
+              <div className="w-11 h-11 shrink-0 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                <Package size={22} />
+              </div>
+
+              <div>
+                <p className="font-bold text-gray-900 text-sm">
+                  Wide Collection
+                </p>
+
+                <p className="text-xs text-gray-500 mt-1">
+                  Many products
+                </p>
+              </div>
+            </div>
+
+            {/* Support */}
+            <div className="flex items-center gap-3 py-6 px-3 lg:px-6">
+              <div className="w-11 h-11 shrink-0 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
+                <Headphones size={22} />
+              </div>
+
+              <div>
+                <p className="font-bold text-gray-900 text-sm">
+                  Customer Support
+                </p>
+
+                <p className="text-xs text-gray-500 mt-1">
+                  We're here to help
+                </p>
+              </div>
+            </div>
+
           </div>
+        </div>
+      </section>
+
+      {/* =================================================
+          CATEGORIES
+      ================================================= */}
+
+      {categories.length > 0 && (
+        <section className="py-14 sm:py-16">
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <div className="flex items-end justify-between gap-4 mb-8">
+
+              <div>
+                <p className="text-blue-600 font-bold text-sm uppercase tracking-wider">
+                  Explore
+                </p>
+
+                <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-1">
+                  Shop by Category
+                </h2>
+
+                <p className="text-gray-500 mt-2">
+                  Find products from your favorite
+                  categories.
+                </p>
+              </div>
+
+              <Link
+                to="/categories"
+                className="hidden sm:inline-flex items-center gap-2 text-blue-600 font-bold hover:gap-3 transition-all"
+              >
+                View All
+                <ArrowRight size={17} />
+              </Link>
+
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+
+              {categories.slice(0, 12).map((category) => {
+                const image = getImageUrl(
+                  category?.image
+                );
+
+                const categoryId =
+                  category?._id || category?.id;
+
+                return (
+                  <button
+                    type="button"
+                    key={categoryId}
+                    onClick={() =>
+                      handleCategoryClick(category)
+                    }
+                    className="group bg-white border border-gray-100 rounded-2xl p-3 hover:border-blue-200 hover:shadow-lg transition-all text-center"
+                  >
+
+                    <div className="aspect-square rounded-xl overflow-hidden bg-gray-100">
+
+                      {image ? (
+                        <img
+                          src={image}
+                          alt={
+                            category?.name ||
+                            "Category"
+                          }
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(event) => {
+                            event.currentTarget.style.display =
+                              "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <Package size={35} />
+                        </div>
+                      )}
+
+                    </div>
+
+                    <h3 className="mt-3 font-bold text-gray-800 text-sm line-clamp-1 group-hover:text-blue-600 transition">
+                      {category?.name || "Category"}
+                    </h3>
+
+                  </button>
+                );
+              })}
+
+            </div>
+
+            <Link
+              to="/categories"
+              className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-white border border-gray-200 text-blue-600 font-bold"
+            >
+              View All Categories
+              <ArrowRight size={17} />
+            </Link>
+
+          </div>
+        </section>
+      )}
+
+      {/* =================================================
+          PRODUCTS
+      ================================================= */}
+
+      <section className="py-14 sm:py-16 bg-white">
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          <div className="flex items-end justify-between gap-4 mb-8">
+
+            <div>
+              <p className="text-blue-600 font-bold text-sm uppercase tracking-wider">
+                Our Collection
+              </p>
+
+              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-1">
+                Featured Products
+              </h2>
+
+              <p className="text-gray-500 mt-2">
+                Explore some of our latest products.
+              </p>
+            </div>
+
+            <Link
+              to="/products"
+              className="hidden sm:inline-flex items-center gap-2 text-blue-600 font-bold hover:gap-3 transition-all"
+            >
+              View All
+              <ArrowRight size={17} />
+            </Link>
+
+          </div>
+
+          {productLoading ? (
+            <div className="py-20 flex justify-center">
+              <Loader2
+                size={35}
+                className="animate-spin text-blue-600"
+              />
+            </div>
+          ) : products.length > 0 ? (
+
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+
+              {products
+                .filter(
+                  (product) =>
+                    product?.isActive !== false
+                )
+                .slice(0, 8)
+                .map((product) => (
+                  <ProductCard
+                    key={
+                      product?._id ||
+                      product?.id
+                    }
+                    product={product}
+                    onInquiry={handleInquiry}
+                  />
+                ))}
+
+            </div>
+
+          ) : (
+
+            <div className="py-20 text-center">
+
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto">
+                <Package size={30} />
+              </div>
+
+              <h3 className="mt-4 text-lg font-bold text-gray-900">
+                No products available
+              </h3>
+
+              <p className="mt-1 text-gray-500">
+                Products will appear here once
+                they are added.
+              </p>
+
+            </div>
+          )}
 
           <Link
             to="/products"
-            className="font-semibold text-green-600 hover:text-green-700"
+            className="sm:hidden mt-8 w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl bg-blue-600 text-white font-bold"
           >
-            View All →
+            View All Products
+            <ArrowRight size={18} />
           </Link>
+
         </div>
-
-        {loadingProducts ? (
-          <div className="py-10 text-center text-gray-500">
-            Loading products...
-          </div>
-        ) : products.length === 0 ? (
-          <div className="rounded-xl bg-white p-8 text-center dark:bg-gray-800">
-            No products found
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {products.slice(0, 8).map((product) => (
-              <Link
-                key={product._id}
-                to={`/product/${product._id}`}
-                className="group overflow-hidden rounded-2xl bg-white shadow-md transition hover:-translate-y-1 hover:shadow-xl dark:bg-gray-800"
-              >
-                <div className="h-64 overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  {product.image ? (
-                    <img
-                      src={
-                        Array.isArray(product.image)
-                          ? product.image[0]
-                          : product.image
-                      }
-                      alt={product.name || "Product"}
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-5xl">
-                      🛍️
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-5">
-                  <h3 className="text-lg font-bold">
-                    {product.name || "Product"}
-                  </h3>
-
-                  {product.brand && (
-                    <p className="mt-1 text-sm text-gray-500">
-                      {product.brand}
-                    </p>
-                  )}
-
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-xl font-bold text-green-600">
-                      ₹{product.price || 0}
-                    </span>
-
-                    <span className="rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white">
-                      View
-                    </span>
-                    
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
       </section>
-      <Footer />
-    </div>
+
+      {/* =================================================
+          WHATSAPP CTA
+      ================================================= */}
+
+      <section className="py-16">
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-500 to-emerald-600 p-7 sm:p-10 lg:p-14">
+
+            {/* Decoration */}
+            <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-white/10" />
+
+            <div className="absolute -left-20 -bottom-20 w-64 h-64 rounded-full bg-white/10" />
+
+            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+
+              <div className="text-white max-w-2xl">
+
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 text-sm font-bold mb-4">
+                  <MessageCircle size={16} />
+                  Quick Inquiry
+                </div>
+
+                <h2 className="text-3xl sm:text-4xl font-black">
+                  Have a question about a product?
+                </h2>
+
+                <p className="mt-3 text-green-50 leading-relaxed">
+                  Contact us directly on WhatsApp
+                  and get product details, pricing
+                  and availability.
+                </p>
+
+              </div>
+
+              {whatsappNumber ? (
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    let number = String(
+                      whatsappNumber
+                    ).replace(/\D/g, "");
+
+                    if (number.length === 10) {
+                      number = `91${number}`;
+                    }
+
+                    const url =
+                      `https://wa.me/${number}`;
+
+                    window.open(
+                      url,
+                      "_blank",
+                      "noopener,noreferrer"
+                    );
+                  }}
+                  className="shrink-0 inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-white text-green-600 font-black shadow-xl hover:bg-green-50 transition"
+                >
+                  <MessageCircle size={21} />
+                  Chat on WhatsApp
+                </button>
+
+              ) : (
+
+                <Link
+                  to="/products"
+                  className="shrink-0 inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-white text-green-600 font-black shadow-xl hover:bg-green-50 transition"
+                >
+                  Browse Products
+                  <ArrowRight size={20} />
+                </Link>
+
+              )}
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =================================================
+          BOTTOM CTA
+      ================================================= */}
+
+      <section className="pb-16">
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          <div className="rounded-3xl bg-gray-900 p-8 sm:p-12 text-center">
+
+            <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto">
+              <Package size={25} />
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl font-black text-white mt-5">
+              Find something you love
+            </h2>
+
+            <p className="text-gray-400 mt-3 max-w-lg mx-auto">
+              Browse our complete collection and
+              discover your next favorite product.
+            </p>
+
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-2 mt-7 px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition"
+            >
+              Explore Products
+              <ArrowRight size={18} />
+            </Link>
+
+          </div>
+        </div>
+      </section>
+
+    </main>
   );
 }
 

@@ -1,655 +1,664 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { toast } from "react-hot-toast";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Search,
+  RefreshCw,
+  Trash2,
+  User,
+  Phone,
+  ShieldCheck,
+  Users,
+  CheckCircle,
+  XCircle,
+  Loader2,
+} from "lucide-react";
 
-function AdminUsers() {
+import api from "../api/axios";
+import toast from "react-hot-toast";
+
+const AdminUser = () => {
+  // =====================================================
+  // STATES
+  // =====================================================
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [search, setSearch] = useState("");
 
-  // ==========================================
-  // BACKEND URL
-  // ==========================================
-
-  const API_URL = "https://e-comm-4-39jg.onrender.com/api";
-
-  // ==========================================
-  // GET TOKEN
-  // ==========================================
-
-  const getToken = () => {
-    return localStorage.getItem("token");
-  };
-
-  // ==========================================
+  // =====================================================
   // GET ALL USERS
-  // ==========================================
+  // =====================================================
 
   const getUsers = async () => {
     try {
       setLoading(true);
 
-      const token = getToken();
+      const response = await api.get("/user/all");
 
-      if (!token) {
-        toast.error("Please login first");
-        return;
-      }
+      console.log("GET USERS RESPONSE:", response.data);
 
-      console.log("Getting users...");
+      const data =
+        response.data?.users ||
+        response.data?.data ||
+        response.data ||
+        [];
 
-      const response = await axios.get(
-        `${API_URL}/user/all`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      console.log("Users Response:", response.data);
-
-      if (response.data?.success) {
-        setUsers(response.data.users || []);
+      if (Array.isArray(data)) {
+        setUsers(data);
       } else {
-        toast.error(
-          response.data?.message ||
-            "Unable to get users"
-        );
+        setUsers([]);
       }
     } catch (error) {
-      console.error("Get Users Error:", error);
-
-      console.error(
-        "Status:",
-        error.response?.status
-      );
-
-      console.error(
-        "Backend Response:",
-        error.response?.data
-      );
-
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("userId");
-
-        toast.error(
-          "Session expired. Please login again"
-        );
-
-        return;
-      }
-
-      if (error.response?.status === 403) {
-        toast.error(
-          "Only admin can view users"
-        );
-
-        return;
-      }
-
-      if (error.response?.status === 404) {
-        toast.error(
-          "Users API not found"
-        );
-
-        return;
-      }
-
-      if (!error.response) {
-        toast.error(
-          "Backend server is not reachable"
-        );
-
-        return;
-      }
+      console.error("GET USERS ERROR:", error);
 
       toast.error(
-        error.response?.data?.message ||
-          "Failed to load users"
+        error?.response?.data?.message ||
+          "Unable to load users"
       );
+
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // ==========================================
+  // =====================================================
   // DELETE USER
-  // ==========================================
+  // =====================================================
 
-  const deleteUser = async (id) => {
-    if (!id) {
-      toast.error("User ID is missing");
+  const handleDelete = async (user) => {
+    if (!user?._id) {
+      toast.error("Invalid user ID");
       return;
     }
 
-    const token = getToken();
-
-    if (!token) {
-      toast.error("Please login first");
+    // Admin ko delete hone se roko
+    if (user.role === "admin") {
+      toast.error("Admin user cannot be deleted");
       return;
     }
 
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this user?"
+      `Are you sure you want to delete ${
+        user.name || user.phone || "this user"
+      }?`
     );
 
-    if (!confirmDelete) {
-      return;
-    }
+    if (!confirmDelete) return;
 
     try {
-      setDeletingId(id);
+      setDeleting(user._id);
 
-      const response = await axios.delete(
-        `${API_URL}/user/delete/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await api.delete(
+        `/user/delete/${user._id}`
       );
 
       console.log(
-        "Delete User Response:",
+        "DELETE USER RESPONSE:",
         response.data
       );
 
-      if (response.data?.success) {
-        toast.success(
-          response.data.message ||
-            "User deleted successfully"
-        );
+      setUsers((prevUsers) =>
+        prevUsers.filter(
+          (item) => item._id !== user._id
+        )
+      );
 
-        setUsers((prevUsers) =>
-          prevUsers.filter(
-            (user) => user._id !== id
-          )
-        );
-      } else {
-        toast.error(
-          response.data?.message ||
-            "Delete failed"
-        );
-      }
+      toast.success(
+        response.data?.message ||
+          "User deleted successfully"
+      );
     } catch (error) {
       console.error(
-        "Delete User Error:",
+        "DELETE USER ERROR:",
         error
       );
 
-      console.error(
-        "Status:",
-        error.response?.status
-      );
-
-      console.error(
-        "Backend Response:",
-        error.response?.data
-      );
-
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("userId");
-
-        toast.error(
-          "Session expired. Please login again"
-        );
-
-        return;
-      }
-
-      if (error.response?.status === 403) {
-        toast.error(
-          "Only admin can delete users"
-        );
-
-        return;
-      }
-
-      if (error.response?.status === 404) {
-        toast.error("User not found");
-        return;
-      }
-
-      if (!error.response) {
-        toast.error(
-          "Backend server is not reachable"
-        );
-
-        return;
-      }
-
       toast.error(
-        error.response?.data?.message ||
-          "Delete failed"
+        error?.response?.data?.message ||
+          "Failed to delete user"
       );
     } finally {
-      setDeletingId(null);
+      setDeleting(null);
     }
   };
 
-  // ==========================================
+  // =====================================================
+  // SEARCH USERS
+  // =====================================================
+
+  const filteredUsers = useMemo(() => {
+    const value = search
+      .toLowerCase()
+      .trim();
+
+    if (!value) {
+      return users;
+    }
+
+    return users.filter((user) => {
+      const name = String(
+        user?.name || ""
+      ).toLowerCase();
+
+      const phone = String(
+        user?.phone || ""
+      ).toLowerCase();
+
+      const role = String(
+        user?.role || ""
+      ).toLowerCase();
+
+      return (
+        name.includes(value) ||
+        phone.includes(value) ||
+        role.includes(value)
+      );
+    });
+  }, [users, search]);
+
+  // =====================================================
   // LOAD USERS
-  // ==========================================
+  // =====================================================
 
   useEffect(() => {
     getUsers();
   }, []);
 
-  // ==========================================
-  // LOADING
-  // ==========================================
+  // =====================================================
+  // STATISTICS
+  // =====================================================
 
-  if (loading) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center px-4">
-        <div className="text-center">
+  const totalUsers = users.length;
 
-          <div className="mx-auto mb-5 h-14 w-14 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
+  const adminUsers = users.filter(
+    (user) => user?.role === "admin"
+  ).length;
 
-          <h2 className="text-xl font-bold text-gray-800">
-            Loading Users...
-          </h2>
+  const normalUsers = users.filter(
+    (user) => user?.role !== "admin"
+  ).length;
 
-          <p className="mt-1 text-sm text-gray-500">
-            Please wait
-          </p>
+  /*
+    Agar tumhare User model me isVerified field hai
+    to ye correct count dega.
 
-        </div>
-      </div>
-    );
-  }
+    Agar isVerified field nahi hai to verifiedUsers = 0.
+  */
+  const verifiedUsers = users.filter(
+    (user) => user?.isVerified === true
+  ).length;
 
-  // ==========================================
-  // MAIN
-  // ==========================================
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
-    <div className="min-h-screen bg-gray-50 px-3 py-5 sm:px-5 md:px-8 lg:px-10">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
 
-      <div className="mx-auto max-w-7xl">
-
-        {/* ======================================
+        {/* =================================================
             HEADER
-        ======================================= */}
+        ================================================= */}
 
-        <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-blue-600">
+              ADMIN PANEL
+            </p>
 
-            {/* TITLE */}
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">
+              Users
+            </h1>
 
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">
-                Manage Users
-              </h1>
+            <p className="text-gray-500 mt-1">
+              Manage all registered users
+            </p>
+          </div>
 
-              <p className="mt-1 text-sm text-gray-500 sm:text-base">
-                Manage all registered users
-              </p>
-            </div>
+          <button
+            type="button"
+            onClick={getUsers}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw
+              size={18}
+              className={
+                loading
+                  ? "animate-spin"
+                  : ""
+              }
+            />
 
-            {/* TOTAL USERS */}
+            {loading ? "Loading..." : "Refresh"}
+          </button>
+        </div>
 
-            <div className="w-full rounded-xl border border-green-100 bg-green-50 px-5 py-3 sm:w-auto">
+        {/* =================================================
+            STATS
+        ================================================= */}
 
-              <div className="flex items-center justify-between gap-8 sm:block">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
-                <p className="text-sm font-medium text-green-600">
+          {/* TOTAL USERS */}
+
+          <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+
+              <div>
+                <p className="text-sm text-gray-500">
                   Total Users
                 </p>
 
-                <p className="text-2xl font-bold text-green-700">
-                  {users.length}
+                <h2 className="text-3xl font-black text-gray-900 mt-1">
+                  {totalUsers}
+                </h2>
+              </div>
+
+              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Users size={24} />
+              </div>
+
+            </div>
+          </div>
+
+          {/* CUSTOMERS */}
+
+          <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+
+              <div>
+                <p className="text-sm text-gray-500">
+                  Customers
+                </p>
+
+                <h2 className="text-3xl font-black text-gray-900 mt-1">
+                  {normalUsers}
+                </h2>
+              </div>
+
+              <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
+                <User size={24} />
+              </div>
+
+            </div>
+          </div>
+
+          {/* ADMINS */}
+
+          <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+
+              <div>
+                <p className="text-sm text-gray-500">
+                  Admins
+                </p>
+
+                <h2 className="text-3xl font-black text-gray-900 mt-1">
+                  {adminUsers}
+                </h2>
+              </div>
+
+              <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                <ShieldCheck size={24} />
+              </div>
+
+            </div>
+          </div>
+
+          {/* VERIFIED */}
+
+          <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+
+              <div>
+                <p className="text-sm text-gray-500">
+                  Verified
+                </p>
+
+                <h2 className="text-3xl font-black text-gray-900 mt-1">
+                  {verifiedUsers}
+                </h2>
+              </div>
+
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <CheckCircle size={24} />
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        {/* =================================================
+            USERS TABLE
+        ================================================= */}
+
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+
+          {/* SEARCH */}
+
+          <div className="p-4 sm:p-5 border-b border-gray-200">
+
+            <div className="relative max-w-md">
+
+              <Search
+                size={19}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+
+              <input
+                type="text"
+                placeholder="Search by name, phone or role..."
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition"
+              />
+
+            </div>
+
+          </div>
+
+          {/* =================================================
+              LOADING
+          ================================================= */}
+
+          {loading ? (
+
+            <div className="min-h-[350px] flex items-center justify-center">
+
+              <div className="text-center">
+
+                <Loader2
+                  size={40}
+                  className="animate-spin text-blue-600 mx-auto"
+                />
+
+                <p className="text-gray-500 mt-3">
+                  Loading users...
                 </p>
 
               </div>
 
             </div>
 
-          </div>
+          ) : filteredUsers.length === 0 ? (
 
-        </div>
+            /* =================================================
+                EMPTY
+            ================================================= */
 
-        {/* ======================================
-            DESKTOP / TABLET TABLE
-        ======================================= */}
+            <div className="min-h-[350px] flex items-center justify-center px-4">
 
-        <div className="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg md:block">
+              <div className="text-center">
 
-          <div className="overflow-x-auto">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400">
+                  <Users size={30} />
+                </div>
 
-            <table className="w-full min-w-[750px]">
+                <h3 className="font-bold text-gray-900 mt-4">
+                  {search
+                    ? "No users found"
+                    : "No users available"}
+                </h3>
 
-              {/* TABLE HEADER */}
+                <p className="text-gray-500 text-sm mt-1">
+                  {search
+                    ? "Try changing your search."
+                    : "There are no registered users yet."}
+                </p>
 
-              <thead className="bg-gray-100">
-
-                <tr>
-
-                  <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700">
-                    #
-                  </th>
-
-                  <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700">
-                    User
-                  </th>
-
-                  <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700">
-                    Phone
-                  </th>
-
-                  <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700">
-                    Role
-                  </th>
-
-                  <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700">
-                    Action
-                  </th>
-
-                </tr>
-
-              </thead>
-
-              {/* TABLE BODY */}
-
-              <tbody>
-
-                {users.length === 0 ? (
-
-                  <tr>
-
-                    <td
-                      colSpan="5"
-                      className="py-20 text-center"
-                    >
-
-                      <div className="flex flex-col items-center">
-
-                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-3xl">
-                          👤
-                        </div>
-
-                        <h3 className="text-lg font-semibold text-gray-700">
-                          No Users Found
-                        </h3>
-
-                        <p className="mt-1 text-sm text-gray-400">
-                          There are no registered users yet.
-                        </p>
-
-                      </div>
-
-                    </td>
-
-                  </tr>
-
-                ) : (
-
-                  users.map((user, index) => (
-
-                    <tr
-                      key={user._id || index}
-                      className="border-b last:border-b-0 hover:bg-gray-50"
-                    >
-
-                      {/* NUMBER */}
-
-                      <td className="px-5 py-4 text-sm text-gray-600">
-                        {index + 1}
-                      </td>
-
-                      {/* USER */}
-
-                      <td className="px-5 py-4">
-
-                        <div className="flex items-center gap-3">
-
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
-
-                            {user.name
-                              ? user.name
-                                  .charAt(0)
-                                  .toUpperCase()
-                              : "U"}
-
-                          </div>
-
-                          <div className="min-w-0">
-
-                            <p className="truncate font-semibold text-gray-800">
-                              {user.name || "N/A"}
-                            </p>
-
-                            <p className="text-xs text-gray-400">
-                              Registered User
-                            </p>
-
-                          </div>
-
-                        </div>
-
-                      </td>
-
-                      {/* PHONE */}
-
-                      <td className="px-5 py-4 text-sm text-gray-700">
-                        +91 {user.phone || "N/A"}
-                      </td>
-
-                      {/* ROLE */}
-
-                      <td className="px-5 py-4">
-
-                        {user.role === "admin" ? (
-
-                          <span className="inline-flex rounded-full bg-purple-100 px-3 py-1 text-sm font-semibold text-purple-700">
-                            Admin
-                          </span>
-
-                        ) : (
-
-                          <span className="inline-flex rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
-                            User
-                          </span>
-
-                        )}
-
-                      </td>
-
-                      {/* DELETE */}
-
-                      <td className="px-5 py-4">
-
-                        <button
-                          onClick={() =>
-                            deleteUser(user._id)
-                          }
-                          disabled={
-                            deletingId ===
-                            user._id
-                          }
-                          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                        >
-
-                          {deletingId ===
-                          user._id
-                            ? "Deleting..."
-                            : "Delete"}
-
-                        </button>
-
-                      </td>
-
-                    </tr>
-
-                  ))
-
-                )}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-
-        {/* ======================================
-            MOBILE USER CARDS
-        ======================================= */}
-
-        <div className="space-y-4 md:hidden">
-
-          {users.length === 0 ? (
-
-            <div className="rounded-2xl border border-gray-200 bg-white px-5 py-14 text-center shadow">
-
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-3xl">
-                👤
               </div>
-
-              <h3 className="text-lg font-semibold text-gray-700">
-                No Users Found
-              </h3>
-
-              <p className="mt-1 text-sm text-gray-400">
-                There are no registered users yet.
-              </p>
 
             </div>
 
           ) : (
 
-            users.map((user, index) => (
+            /* =================================================
+                TABLE
+            ================================================= */
 
-              <div
-                key={user._id || index}
-                className="rounded-2xl border border-gray-200 bg-white p-4 shadow-md"
-              >
+            <div className="overflow-x-auto">
 
-                {/* CARD TOP */}
+              <table className="w-full min-w-[850px]">
 
-                <div className="flex items-start justify-between gap-3">
+                {/* TABLE HEAD */}
 
-                  <div className="flex min-w-0 items-center gap-3">
+                <thead className="bg-gray-50">
 
-                    {/* AVATAR */}
+                  <tr>
 
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600">
-
-                      {user.name
-                        ? user.name
-                            .charAt(0)
-                            .toUpperCase()
-                        : "U"}
-
-                    </div>
-
-                    {/* NAME */}
-
-                    <div className="min-w-0">
-
-                      <h3 className="truncate font-bold text-gray-800">
-
-                        {user.name || "N/A"}
-
-                      </h3>
-
-                      <p className="text-xs text-gray-400">
-                        User #{index + 1}
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                  {/* ROLE */}
-
-                  {user.role === "admin" ? (
-
-                    <span className="shrink-0 rounded-full bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-700">
-                      Admin
-                    </span>
-
-                  ) : (
-
-                    <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
+                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">
                       User
-                    </span>
+                    </th>
 
-                  )}
-
-                </div>
-
-                {/* CARD DETAILS */}
-
-                <div className="mt-4 space-y-3 rounded-xl bg-gray-50 p-3">
-
-                  {/* PHONE */}
-
-                  <div className="flex items-center justify-between gap-3">
-
-                    <span className="text-sm text-gray-500">
+                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">
                       Phone
-                    </span>
+                    </th>
 
-                    <span className="break-all text-right text-sm font-semibold text-gray-700">
-                      +91 {user.phone || "N/A"}
-                    </span>
+                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">
+                      Role
+                    </th>
 
-                  </div>
+                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">
+                      Status
+                    </th>
 
-                  {/* ID */}
+                    <th className="px-6 py-4 text-right text-xs font-black uppercase tracking-wide text-gray-500">
+                      Action
+                    </th>
 
-                  <div className="flex items-start justify-between gap-3">
+                  </tr>
 
-                    <span className="shrink-0 text-sm text-gray-500">
-                      User ID
-                    </span>
+                </thead>
 
-                    <span className="break-all text-right text-xs text-gray-400">
-                      {user._id || "N/A"}
-                    </span>
+                {/* TABLE BODY */}
 
-                  </div>
+                <tbody className="divide-y divide-gray-100">
 
-                </div>
+                  {filteredUsers.map((user) => {
 
-                {/* DELETE BUTTON */}
+                    const isAdmin =
+                      user?.role === "admin";
 
-                <button
-                  onClick={() =>
-                    deleteUser(user._id)
-                  }
-                  disabled={
-                    deletingId === user._id
-                  }
-                  className="mt-4 w-full rounded-xl bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                >
+                    const isDeleting =
+                      deleting === user?._id;
 
-                  {deletingId === user._id
-                    ? "Deleting..."
-                    : "Delete User"}
+                    const isVerified =
+                      user?.isVerified === true;
 
-                </button>
+                    const userName =
+                      user?.name ||
+                      "Unknown User";
 
-              </div>
+                    const userPhone =
+                      user?.phone ||
+                      "No phone";
 
-            ))
+                    const userId =
+                      String(
+                        user?._id || ""
+                      );
+
+                    return (
+                      <tr
+                        key={userId}
+                        className="hover:bg-gray-50 transition"
+                      >
+
+                        {/* USER */}
+
+                        <td className="px-6 py-4">
+
+                          <div className="flex items-center gap-3">
+
+                            <div className="w-11 h-11 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-black uppercase">
+                              {String(userName)
+                                .charAt(0)}
+                            </div>
+
+                            <div>
+
+                              <p className="font-bold text-gray-900">
+                                {userName}
+                              </p>
+
+                              <p className="text-xs text-gray-400">
+                                ID:{" "}
+                                {userId
+                                  ? userId.slice(-8)
+                                  : "N/A"}
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                        </td>
+
+                        {/* PHONE */}
+
+                        <td className="px-6 py-4">
+
+                          <div className="flex items-center gap-2 text-gray-600">
+
+                            <Phone
+                              size={16}
+                              className="shrink-0"
+                            />
+
+                            <span>
+                              {userPhone}
+                            </span>
+
+                          </div>
+
+                        </td>
+
+                        {/* ROLE */}
+
+                        <td className="px-6 py-4">
+
+                          {isAdmin ? (
+
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">
+
+                              <ShieldCheck size={14} />
+
+                              Admin
+
+                            </span>
+
+                          ) : (
+
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold">
+
+                              <User size={14} />
+
+                              User
+
+                            </span>
+
+                          )}
+
+                        </td>
+
+                        {/* STATUS */}
+
+                        <td className="px-6 py-4">
+
+                          {isVerified ? (
+
+                            <span className="inline-flex items-center gap-1.5 text-green-600 text-sm font-semibold">
+
+                              <CheckCircle size={16} />
+
+                              Verified
+
+                            </span>
+
+                          ) : (
+
+                            <span className="inline-flex items-center gap-1.5 text-red-500 text-sm font-semibold">
+
+                              <XCircle size={16} />
+
+                              Not Verified
+
+                            </span>
+
+                          )}
+
+                        </td>
+
+                        {/* ACTION */}
+
+                        <td className="px-6 py-4">
+
+                          <div className="flex justify-end">
+
+                            {isAdmin ? (
+
+                              <span className="text-xs font-semibold text-gray-400 px-3">
+                                Protected
+                              </span>
+
+                            ) : (
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDelete(user)
+                                }
+                                disabled={isDeleting}
+                                className="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Delete user"
+                              >
+
+                                {isDeleting ? (
+
+                                  <Loader2
+                                    size={18}
+                                    className="animate-spin"
+                                  />
+
+                                ) : (
+
+                                  <Trash2
+                                    size={18}
+                                  />
+
+                                )}
+
+                              </button>
+
+                            )}
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+
+                </tbody>
+
+              </table>
+
+            </div>
 
           )}
 
         </div>
 
       </div>
-
     </div>
   );
-}
+};
 
-export default AdminUsers;
+export default AdminUser;

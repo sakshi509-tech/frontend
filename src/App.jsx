@@ -1,196 +1,93 @@
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
+import Home from "./pages/Home";
+import Products from "./pages/Products";
+import ProductDetails from "./pages/ProductDetails";
+import Categories from "./pages/Categories";
+import CategoryProducts from "./pages/CategoryProducts";
+import Cart from "./pages/Cart";
+import Wishlist from "./pages/Wishlist";
+import Register from "./pages/Register";
+import Login from "./pages/Login";
+import Profile from "./pages/Profile";
+import Address from "./pages/Address";
+import MyProducts from "./pages/MyProducts";
+import AdminLayout from "./admin/AdminLayout";
+import AdminDashboard from "./admin/AdminDeshboard";
+import AdminProducts from "./admin/AdminProducts";
+import AdminCategories from "./admin/AdminCategories";
+import AdminSuppliers from "./admin/AdminSuppliers";
+import AdminBanners from "./admin/AdminBanners";
+import AdminFooter from "./admin/AdminFooter";
+import AdminWhatsapp from "./admin/AdminWhatsapp";
+import AdminUsers from "./admin/AdminUser";
+import AdminSetting from "./admin/AdminSetting";
 
-import React from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-} from "react-router-dom";
-
-import { Toaster } from "react-hot-toast";
-
-// =========================
-// USER PAGES
-// =========================
-import Home from "./pages/home";
-import Login from "./pages/login";
-import Signup from "./pages/register";
-import Profile from "./pages/profile";
-import Wishlist from "./pages/wishlist";
-import Cart from "./pages/cart";
-import Search from "./pages/search";
-import Products from "./pages/product";
-import ProductDetails from "./pages/singleProduct.jsx";
-import CategoryProducts from "./pages/categoryProducts";
-import EditProfile from "./pages/EditProfile.jsx";
-
-// =========================
-// COMPONENTS
-// =========================
-import WhatsAppButton from "./component/whatsappButton";
-import AdminRoute from "./component/adminRoute.jsx";
-
-// =========================
-// ADMIN PAGES
-// =========================
-import AdminDashboard from "./admin/adminDeshboard.jsx";
-import AdminLayout from "./admin/adminLayout.jsx";
-import AdminProducts from "./admin/adminProduct.jsx";
-import AdminProductAdd from "./admin/adminProductAdd.jsx";
-import AdminProductEdit from "./admin/adminProductEdit.jsx";
-import AdminUsers from "./admin/adminUser.jsx";
-import AdminCategories from "./admin/adminCategory.jsx";
-import AdminCategoryAdd from "./admin/adminCategoryAdd.jsx";
-import AdminCategoryEdit from "./admin/categoryEdit.jsx";
+function NotFound() {
+  return (
+    <div className="min-h-[70vh] flex items-center justify-center">
+      <h1 className="text-3xl font-bold">Page Not Found</h1>
+    </div>
+  );
+}
 
 function App() {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith("/admin");
+
   return (
-    <BrowserRouter>
-
-      <Toaster
-        position="top-right"
-        reverseOrder={false}
-      />
-
+    <div className="min-h-screen">
+      {!isAdminPage && <Navbar />}
       <Routes>
-
-        {/* =========================
-            USER ROUTES
-        ========================= */}
-
+        <Route path="/" element={<Home />} />
+        <Route path="/send-otp" element={<Register />} />
+        <Route path="/verify-otp" element={<Login />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/products/:id" element={<ProductDetails />} />
+        <Route path="/productdetails" element={<ProductDetails />} />
+        <Route path="/categories" element={<Categories />} />
+        <Route path="/category" element={<Categories />} />
+        <Route path="/categories/:slug" element={<CategoryProducts />} />
+        <Route path="/category/:id" element={<CategoryProducts />} />
+        <Route path="/category-products" element={<CategoryProducts />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/address" element={<Address />} />
         <Route
-          path="/"
-          element={<Home />}
+          path="/my-products"
+          element={
+            <ProtectedRoute>
+              <MyProducts />
+            </ProtectedRoute>
+          }
         />
-
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        <Route
-          path="/signup"
-          element={<Signup />}
-        />
-
-        <Route
-          path="/profile"
-          element={<Profile />}
-        />
-
-        <Route
-          path="/wishlist"
-          element={<Wishlist />}
-        />
-
-        <Route
-          path="/cart"
-          element={<Cart />}
-        />
-
-        <Route
-          path="/search"
-          element={<Search />}
-        />
-
-        <Route
-          path="/category/:id"
-          element={<CategoryProducts />}
-        />
-
-        <Route
-          path="/product/:id"
-          element={<ProductDetails />}
-        />
-
-        <Route
-          path="/products"
-          element={<Products />}
-        />
-
-        <Route
-          path="/whatsapp"
-          element={<WhatsAppButton />}
-        />
-
-
-<Route
-  path="/edit-profile"
-  element={<EditProfile />}
-/>
-
-
-        {/* =========================
-            ADMIN ROUTES
-        ========================= */}
 
         <Route element={<AdminRoute />}>
-
-          <Route
-            path="/admin"
-            element={<AdminLayout />}
-          >
-
-            {/* /admin */}
-            <Route
-              index
-              element={<AdminDashboard />}
-            />
-
-            {/* /admin/dashboard */}
-            <Route
-              path="dashboard"
-              element={<AdminDashboard />}
-            />
-
-            {/* /admin/users */}
-            <Route
-              path="users"
-              element={<AdminUsers />}
-            />
-
-            {/* /admin/categories */}
-            <Route
-              path="categories"
-              element={<AdminCategories />}
-            />
-
-            {/* /admin/categories/add */}
-            <Route
-              path="categories/add"
-              element={<AdminCategoryAdd />}
-            />
-
-            {/* /admin/categories/edit/:id */}
-            <Route
-              path="categories/edit/:id"
-              element={<AdminCategoryEdit />}
-            />
-
-            {/* /admin/products */}
-            <Route
-              path="products"
-              element={<AdminProducts />}
-            />
-
-            {/* /admin/products/add */}
-            <Route
-              path="products/add"
-              element={<AdminProductAdd />}
-            />
-
-            {/* /admin/products/edit/:id */}
-            <Route
-              path="products/edit/:id"
-              element={<AdminProductEdit />}
-            />
-
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="layout" element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="categories" element={<AdminCategories />} />
+            <Route path="suppliers" element={<AdminSuppliers />} />
+            <Route path="banners" element={<AdminBanners />} />
+            <Route path="footer" element={<AdminFooter />} />
+            <Route path="whatsapp" element={<AdminWhatsapp />} />
+            {/* <Route path="uploader" element={<AdminUploader />} />
+            <Route path="uploads" element={<Navigate to="../uploader" replace />} /> */}
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="settings" element={<AdminSetting />} />
           </Route>
-
         </Route>
 
+        <Route path="*" element={<NotFound />} />
       </Routes>
-
-    </BrowserRouter>
+      {!isAdminPage && <Footer />}
+    </div>
   );
 }
 

@@ -1,520 +1,747 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-
 import {
-  FaUsers,
-  FaBox,
-  FaTags,
-  FaShoppingCart,
-  FaRupeeSign,
-  FaSyncAlt,
-  FaUserShield,
-  FaTimes,
-} from "react-icons/fa";
+  Users,
+  Package,
+  FolderTree,
+  ShoppingCart,
+  Heart,
+  MapPin,
+  RefreshCcw,
+  ShieldCheck,
+  UserCheck,
+  Truck,
+  Star,
+  TrendingUp,
+  Plus,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import api from "../api/axios";
 
-const API_URL = "https://e-comm-4-39jg.onrender.com/api/admin/dashboard";
-const CREATE_ADMIN_URL = "https://e-comm-4-39jg.onrender.com/api/admin/create-admin";
+// =====================================================
+// DEFAULT DATA
+// =====================================================
 
-function AdminDashboard() {
-  const [dashboard, setDashboard] = useState({
-    totalUsers: 0,
-    totalProducts: 0,
-    totalCategories: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-  });
+const defaultDashboard = {
+  users: {
+    total: 0,
+    users: 0,
+    admins: 0,
+  },
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  products: {
+    total: 0,
+    active: 0,
+    dropshipping: 0,
+    featured: 0,
+    newArrival: 0,
+    bestSeller: 0,
+  },
 
-  // ==========================================
-  // CREATE ADMIN MODAL
-  // ==========================================
-  const [showCreateAdmin, setShowCreateAdmin] = useState(false);
+  categories: {
+    total: 0,
+  },
 
-  const [adminData, setAdminData] = useState({
-    name: "",
-    phone: "",
-  });
+  cart: {
+    totalItems: 0,
+    totalCarts: 0,
+  },
 
-  const [creatingAdmin, setCreatingAdmin] = useState(false);
+  wishlist: {
+    totalItems: 0,
+    totalWishlists: 0,
+  },
 
-  // ==========================================
-  // GET DASHBOARD
-  // ==========================================
-  const getDashboard = async (isRefresh = false) => {
+  addresses: {
+    total: 0,
+  },
+
+  orders: {
+    total: 0,
+    pending: 0,
+    delivered: 0,
+    cancelled: 0,
+    revenue: 0,
+  },
+};
+
+// =====================================================
+// NUMBER HELPER
+// =====================================================
+
+const toNumber = (value) => {
+  const num = Number(value);
+
+  return Number.isFinite(num) ? num : 0;
+};
+
+const StatCard = ({ title, value, icon: Icon, description, link }) => {
+  const content = (
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          {title}
+        </p>
+        <p className="mt-2 text-3xl font-black text-gray-900 dark:text-white">
+          {toNumber(value).toLocaleString("en-IN")}
+        </p>
+        <p className="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+          {description}
+        </p>
+      </div>
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950">
+        <Icon size={23} />
+      </div>
+    </div>
+  );
+
+  const className = "block rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-gray-900";
+
+  return link ? <Link to={link} className={className}>{content}</Link> : <div className={className}>{content}</div>;
+};
+
+// =====================================================
+// ADMIN DASHBOARD
+// =====================================================
+
+const AdminDashboard = () => {
+  const [dashboard, setDashboard] =
+    useState(defaultDashboard);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+  // ===================================================
+  // LOAD DASHBOARD
+  // ===================================================
+
+  const loadDashboard = async () => {
     try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+      setRefreshing(true);
 
-      const token = localStorage.getItem("token");
+      const response = await api.get(
+        "/admin/dashboard"
+      );
 
-      if (!token) {
-        toast.error("Please login first");
+      console.log(
+        "DASHBOARD RESPONSE:",
+        response.data
+      );
+
+      if (!response.data?.success) {
+        toast.error(
+          response.data?.message ||
+            "Dashboard data not found"
+        );
+
         return;
       }
 
-      const response = await axios.get(API_URL, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const data =
+        response.data?.dashboard || {};
+
+      // =================================================
+      // USERS
+      // =================================================
+
+      const users = {
+        total: toNumber(
+          data.users?.total ??
+            data.totalUsers
+        ),
+
+        users: toNumber(
+          data.users?.users ??
+            data.totalUsers
+        ),
+
+        admins: toNumber(
+          data.users?.admins
+        ),
+      };
+
+      // =================================================
+      // PRODUCTS
+      // =================================================
+
+      const products = {
+        total: toNumber(
+          data.products?.total ??
+            data.totalProducts
+        ),
+
+        active: toNumber(
+          data.products?.active ??
+            data.totalProducts
+        ),
+
+        dropshipping: toNumber(
+          data.products?.dropshipping
+        ),
+
+        featured: toNumber(
+          data.products?.featured
+        ),
+
+        newArrival: toNumber(
+          data.products?.newArrival
+        ),
+
+        bestSeller: toNumber(
+          data.products?.bestSeller
+        ),
+      };
+
+      // =================================================
+      // CATEGORIES
+      // =================================================
+
+      const categories = {
+        total: toNumber(
+          data.categories?.total ??
+            data.totalCategories
+        ),
+      };
+
+      // =================================================
+      // CART
+      // =================================================
+
+      const cart = {
+        totalItems: toNumber(
+          data.cart?.totalItems
+        ),
+
+        totalCarts: toNumber(
+          data.cart?.totalCarts
+        ),
+      };
+
+      // =================================================
+      // WISHLIST
+      // =================================================
+
+      const wishlist = {
+        totalItems: toNumber(
+          data.wishlist?.totalItems
+        ),
+
+        totalWishlists: toNumber(
+          data.wishlist?.totalWishlists
+        ),
+      };
+
+      // =================================================
+      // ADDRESSES
+      // =================================================
+
+      const addresses = {
+        total: toNumber(
+          data.addresses?.total
+        ),
+      };
+
+      // =================================================
+      // ORDERS
+      // =================================================
+
+      const orders = {
+        total: toNumber(
+          data.totalOrders
+        ),
+
+        pending: toNumber(
+          data.pendingOrders
+        ),
+
+        delivered: toNumber(
+          data.deliveredOrders
+        ),
+
+        cancelled: toNumber(
+          data.cancelledOrders
+        ),
+
+        revenue: toNumber(
+          data.totalRevenue
+        ),
+      };
+
+      // =================================================
+      // UPDATE STATE
+      // =================================================
+
+      setDashboard({
+        users,
+        products,
+        categories,
+        cart,
+        wishlist,
+        addresses,
+        orders,
       });
+    } catch (error) {
+      console.error(
+        "DASHBOARD ERROR:",
+        error?.response?.data ||
+          error?.message ||
+          error
+      );
 
-      console.log("Dashboard Response:", response.data);
+      const status =
+        error?.response?.status;
 
-      const data = response.data;
-
-      if (data.success) {
-        const dashboardData = data.dashboard || {};
-
-        setDashboard({
-          totalUsers: dashboardData.totalUsers || 0,
-          totalProducts: dashboardData.totalProducts || 0,
-          totalCategories:
-            dashboardData.totalCategories || 0,
-          totalOrders:
-            dashboardData.totalOrders || 0,
-          totalRevenue:
-            dashboardData.totalRevenue || 0,
-        });
+      if (status === 401) {
+        toast.error(
+          "Login required. Please login again."
+        );
+      } else if (status === 403) {
+        toast.error(
+          "Admin access required."
+        );
+      } else if (status === 404) {
+        toast.error(
+          "Dashboard API not found."
+        );
       } else {
         toast.error(
-          data.message || "Unable to load dashboard"
+          error?.response?.data
+            ?.message ||
+            "Dashboard load nahi ho raha"
         );
       }
-    } catch (error) {
-      console.error("Dashboard Error:", error);
-
-      console.error(
-        "Backend Response:",
-        error.response?.data
-      );
-
-      if (error.response?.status === 401) {
-        toast.error("Unauthorized. Please login again.");
-        localStorage.removeItem("token");
-        return;
-      }
-
-      if (error.response?.status === 403) {
-        toast.error(
-          "Only admin can access dashboard"
-        );
-        return;
-      }
-
-      toast.error(
-        error.response?.data?.message ||
-          "Unable to load dashboard"
-      );
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // ==========================================
-  // CREATE ADMIN INPUT
-  // ==========================================
-  const handleAdminChange = (e) => {
-    const { name, value } = e.target;
-
-    if (name === "phone") {
-      const phoneValue = value
-        .replace(/\D/g, "")
-        .slice(0, 10);
-
-      setAdminData({
-        ...adminData,
-        phone: phoneValue,
-      });
-
-      return;
-    }
-
-    setAdminData({
-      ...adminData,
-      [name]: value,
-    });
-  };
-
-  // ==========================================
-  // CREATE ADMIN
-  // ==========================================
-  const handleCreateAdmin = async (e) => {
-    e.preventDefault();
-
-    if (!adminData.name.trim()) {
-      toast.error("Please enter admin name");
-      return;
-    }
-
-    if (adminData.phone.length !== 10) {
-      toast.error(
-        "Please enter valid 10 digit phone number"
-      );
-      return;
-    }
-
-    try {
-      setCreatingAdmin(true);
-
-      const token = localStorage.getItem("token");
-
-      const response = await axios.post(
-        CREATE_ADMIN_URL,
-        {
-          name: adminData.name.trim(),
-          phone: adminData.phone,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      console.log(
-        "Create Admin Response:",
-        response.data
-      );
-
-      if (response.data.success) {
-        toast.success(
-          response.data.message ||
-            "Admin created successfully"
-        );
-
-        setAdminData({
-          name: "",
-          phone: "",
-        });
-
-        setShowCreateAdmin(false);
-
-        // Dashboard count refresh
-        getDashboard(true);
-      } else {
-        toast.error(
-          response.data.message ||
-            "Unable to create admin"
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Create Admin Error:",
-        error
-      );
-
-      console.error(
-        "Backend Response:",
-        error.response?.data
-      );
-
-      toast.error(
-        error.response?.data?.message ||
-          "Unable to create admin"
-      );
-    } finally {
-      setCreatingAdmin(false);
-    }
-  };
-
-  // ==========================================
-  // CLOSE MODAL
-  // ==========================================
-  const closeCreateAdmin = () => {
-    if (creatingAdmin) return;
-
-    setShowCreateAdmin(false);
-
-    setAdminData({
-      name: "",
-      phone: "",
-    });
-  };
-
-  // ==========================================
-  // LOAD DASHBOARD
-  // ==========================================
   useEffect(() => {
-    getDashboard();
+    loadDashboard();
   }, []);
 
-  // ==========================================
-  // LOADING
-  // ==========================================
   if (loading) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
-
-          <h2 className="text-xl font-bold text-gray-800">
-            Loading Dashboard...
-          </h2>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-sm font-semibold text-gray-500">Loading dashboard...</div>
       </div>
     );
   }
 
-  // ==========================================
-  // DASHBOARD
-  // ==========================================
   return (
-    <div className="mx-auto max-w-7xl p-4 sm:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
 
-      {/* =====================================
+      {/* =================================================
           HEADER
-      ====================================== */}
-      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      ================================================= */}
 
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Admin Dashboard
-          </h1>
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck
+                  size={30}
+                  className="text-blue-600"
+                />
 
-          <p className="mt-1 text-gray-500">
-            Overview of your store
-          </p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                  Admin Dashboard
+                </h1>
+              </div>
+
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Manage your store from one place
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={loadDashboard}
+              disabled={refreshing}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:opacity-60 transition"
+            >
+              <RefreshCcw
+                size={18}
+                className={
+                  refreshing
+                    ? "animate-spin"
+                    : ""
+                }
+              />
+
+              {refreshing
+                ? "Refreshing..."
+                : "Refresh"}
+            </button>
+          </div>
         </div>
+      </header>
 
-        <div className="flex flex-wrap gap-3">
+      {/* =================================================
+          MAIN
+      ================================================= */}
 
-          {/* CREATE ADMIN */}
-          <button
-            onClick={() =>
-              setShowCreateAdmin(true)
-            }
-            className="flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-5 py-3 font-semibold text-white transition hover:bg-purple-700"
-          >
-            <FaUserShield />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* =================================================
+            OVERVIEW
+        ================================================= */}
 
-            Create Admin
-          </button>
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Overview
+          </h2>
 
-          {/* REFRESH */}
-          <button
-            onClick={() => getDashboard(true)}
-            disabled={refreshing}
-            className="flex items-center justify-center gap-2 rounded-lg bg-green-600 px-5 py-3 font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-          >
-            <FaSyncAlt
-              className={
-                refreshing
-                  ? "animate-spin"
-                  : ""
-              }
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <StatCard
+              title="Total Users"
+              value={dashboard.users.total}
+              icon={Users}
+              description={`${dashboard.users.users} normal users`}
+              link="/admin/users"
             />
 
-            {refreshing
-              ? "Refreshing..."
-              : "Refresh"}
-          </button>
+            <StatCard
+              title="Products"
+              value={dashboard.products.total}
+              icon={Package}
+              description={`${dashboard.products.active} active`}
+              link="/admin/products"
+            />
 
-        </div>
-      </div>
+            <StatCard
+              title="Categories"
+              value={
+                dashboard.categories.total
+              }
+              icon={FolderTree}
+              description="Total categories"
+              link="/admin/categories"
+            />
 
-      {/* =====================================
-          CARDS
-      ====================================== */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-5">
-
-        {/* USERS */}
-        <div className="rounded-2xl bg-white p-6 shadow-md">
-          <div className="flex items-center justify-between">
-
-            <div>
-              <p className="font-medium text-gray-500">
-                Total Users
-              </p>
-
-              <h2 className="mt-2 text-3xl font-bold text-gray-800">
-                {dashboard.totalUsers}
-              </h2>
-            </div>
-
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-green-100 text-2xl text-green-600">
-              <FaUsers />
-            </div>
-
+            <StatCard
+              title="Admins"
+              value={dashboard.users.admins}
+              icon={ShieldCheck}
+              description="Admin accounts"
+              link="/admin/users"
+            />
           </div>
-        </div>
+        </section>
 
-        {/* PRODUCTS */}
-        <div className="rounded-2xl bg-white p-6 shadow-md">
-          <div className="flex items-center justify-between">
+        {/* =================================================
+            PRODUCT STATISTICS
+        ================================================= */}
 
-            <div>
-              <p className="font-medium text-gray-500">
-                Total Products
-              </p>
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Product Statistics
+          </h2>
 
-              <h2 className="mt-2 text-3xl font-bold text-gray-800">
-                {dashboard.totalProducts}
-              </h2>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <StatCard
+              title="Active Products"
+              value={
+                dashboard.products.active
+              }
+              icon={Package}
+              description="Currently active"
+            />
 
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-100 text-2xl text-blue-600">
-              <FaBox />
-            </div>
+            <StatCard
+              title="Featured"
+              value={
+                dashboard.products.featured
+              }
+              icon={Star}
+              description="Featured products"
+            />
 
+            <StatCard
+              title="New Arrivals"
+              value={
+                dashboard.products.newArrival
+              }
+              icon={Plus}
+              description="New products"
+            />
+
+            <StatCard
+              title="Best Sellers"
+              value={
+                dashboard.products.bestSeller
+              }
+              icon={TrendingUp}
+              description="Best seller products"
+            />
           </div>
-        </div>
+        </section>
 
-        {/* CATEGORIES */}
-        <div className="rounded-2xl bg-white p-6 shadow-md">
-          <div className="flex items-center justify-between">
+        {/* =================================================
+            STORE / DROPSHIPPING
+        ================================================= */}
 
-            <div>
-              <p className="font-medium text-gray-500">
-                Total Categories
-              </p>
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Store Statistics
+          </h2>
 
-              <h2 className="mt-2 text-3xl font-bold text-gray-800">
-                {dashboard.totalCategories}
-              </h2>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <StatCard
+              title="Dropshipping"
+              value={
+                dashboard.products
+                  .dropshipping
+              }
+              icon={Truck}
+              description="Supplier products"
+              link="/admin/products?source=dropshipping"
+            />
 
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-yellow-100 text-2xl text-yellow-600">
-              <FaTags />
-            </div>
+            <StatCard
+              title="Cart Items"
+              value={
+                dashboard.cart.totalItems
+              }
+              icon={ShoppingCart}
+              description={`${dashboard.cart.totalCarts} carts`}
+            />
 
+            <StatCard
+              title="Wishlist Items"
+              value={
+                dashboard.wishlist
+                  .totalItems
+              }
+              icon={Heart}
+              description={`${dashboard.wishlist.totalWishlists} wishlists`}
+            />
+
+            <StatCard
+              title="Addresses"
+              value={
+                dashboard.addresses.total
+              }
+              icon={MapPin}
+              description="Saved addresses"
+            />
           </div>
-        </div>
+        </section>
 
+        {/* =================================================
+            QUICK ACTIONS
+        ================================================= */}
 
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Quick Actions
+          </h2>
 
-      </div>
-
-      {/* =====================================
-          CREATE ADMIN MODAL
-      ====================================== */}
-      {showCreateAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-
-            {/* MODAL HEADER */}
-            <div className="mb-6 flex items-center justify-between">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link
+              to="/admin/products"
+              className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl hover:border-blue-500 hover:shadow-md transition"
+            >
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600">
+                <Package size={20} />
+              </div>
 
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Create Admin
-                </h2>
+                <p className="font-semibold text-gray-900 dark:text-white">
+                  Products
+                </p>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  Add a new administrator
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Manage products
                 </p>
               </div>
+            </Link>
 
-              <button
-                type="button"
-                onClick={closeCreateAdmin}
-                disabled={creatingAdmin}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition hover:bg-red-100 hover:text-red-600"
+            <Link
+              to="/admin/categories"
+              className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl hover:border-blue-500 hover:shadow-md transition"
+            >
+              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-600">
+                <FolderTree size={20} />
+              </div>
+
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white">
+                  Categories
+                </p>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Manage categories
+                </p>
+              </div>
+            </Link>
+
+            <Link
+              to="/admin/users"
+              className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl hover:border-blue-500 hover:shadow-md transition"
+            >
+              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-950 text-green-600">
+                <UserCheck size={20} />
+              </div>
+
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white">
+                  Users
+                </p>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Manage users
+                </p>
+              </div>
+            </Link>
+
+          </div>
+        </section>
+
+        {/* =================================================
+            SUMMARY
+        ================================================= */}
+
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* USERS */}
+
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600">
+                  <Users size={22} />
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    Users
+                  </h3>
+
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Account overview
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                to="/admin/users"
+                className="text-sm font-medium text-blue-600 hover:text-blue-700"
               >
-                <FaTimes />
-              </button>
-
+                View All
+              </Link>
             </div>
 
-            {/* FORM */}
-            <form
-              onSubmit={handleCreateAdmin}
-              className="space-y-5"
-            >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Total Users
+                </span>
 
-              {/* NAME */}
-              <div>
-                <label className="mb-2 block font-semibold text-gray-700">
-                  Admin Name
-                </label>
-
-                <input
-                  type="text"
-                  name="name"
-                  value={adminData.name}
-                  onChange={handleAdminChange}
-                  placeholder="Enter admin name"
-                  disabled={creatingAdmin}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-800 outline-none transition focus:border-purple-600"
-                />
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {dashboard.users.total.toLocaleString()}
+                </span>
               </div>
 
-              {/* PHONE */}
-              <div>
-                <label className="mb-2 block font-semibold text-gray-700">
-                  Phone Number
-                </label>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Normal Users
+                </span>
 
-                <div className="flex">
-
-                  <span className="flex items-center rounded-l-xl border border-r-0 border-gray-300 bg-gray-100 px-4 font-semibold text-gray-700">
-                    +91
-                  </span>
-
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={adminData.phone}
-                    onChange={handleAdminChange}
-                    placeholder="10 digit phone"
-                    maxLength={10}
-                    inputMode="numeric"
-                    disabled={creatingAdmin}
-                    className="w-full rounded-r-xl border border-gray-300 px-4 py-3 text-gray-800 outline-none transition focus:border-purple-600"
-                  />
-
-                </div>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {dashboard.users.users.toLocaleString()}
+                </span>
               </div>
 
-              {/* ROLE */}
-              <div>
-                <label className="mb-2 block font-semibold text-gray-700">
-                  Role
-                </label>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Admins
+                </span>
 
-                <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 font-semibold text-purple-700">
-                  Admin
-                </div>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {dashboard.users.admins.toLocaleString()}
+                </span>
               </div>
-
-              {/* BUTTONS */}
-              <div className="flex gap-3 pt-2">
-
-                <button
-                  type="button"
-                  onClick={closeCreateAdmin}
-                  disabled={creatingAdmin}
-                  className="w-full rounded-xl border border-gray-300 py-3 font-semibold text-gray-700 transition hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={creatingAdmin}
-                  className="w-full rounded-xl bg-purple-600 py-3 font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {creatingAdmin
-                    ? "Creating..."
-                    : "Create Admin"}
-                </button>
-
-              </div>
-
-            </form>
+            </div>
           </div>
-        </div>
-      )}
 
+          {/* STORE */}
+
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-950 text-green-600">
+                <TrendingUp size={22} />
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  Store Summary
+                </h3>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Current store statistics
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Products
+                </span>
+
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {dashboard.products.total.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Categories
+                </span>
+
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {dashboard.categories.total.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Cart Items
+                </span>
+
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {dashboard.cart.totalItems.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Wishlist Items
+                </span>
+
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {dashboard.wishlist.totalItems.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Addresses
+                </span>
+
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {dashboard.addresses.total.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
-}
+};
 
 export default AdminDashboard;

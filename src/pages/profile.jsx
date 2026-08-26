@@ -1,10 +1,23 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-hot-toast";
-import Navbar from "../component/navbar";
+import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = "https://e-comm-4-39jg.onrender.com/api";
+import {
+  User,
+  Phone,
+  Save,
+  Loader2,
+  MapPin,
+  Heart,
+  ShoppingCart,
+  LogOut,
+  ArrowRight,
+  ShieldCheck,
+  Edit3,
+  Package
+} from "lucide-react";
+
+import { toast } from "react-hot-toast";
+import api from "../api/axios";
 
 function Profile() {
   const navigate = useNavigate();
@@ -19,233 +32,108 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // ==========================================
-  // GET TOKEN
-  // ==========================================
-
-  const getToken = () => {
-    return localStorage.getItem("token");
-  };
-
-  // ==========================================
-  // GET USER ID
-  // ==========================================
-
-  const getUserId = () => {
-    // First priority: direct userId
-    const userId = localStorage.getItem("userId");
-
-    if (userId) {
-      return userId;
-    }
-
-    // Second priority: user object
-    const storedUser = localStorage.getItem("user");
-
-    if (!storedUser) {
-      return null;
-    }
-
-    try {
-      const parsedUser = JSON.parse(storedUser);
-
-      return (
-        parsedUser?._id ||
-        parsedUser?.id ||
-        parsedUser?.user?._id ||
-        parsedUser?.user?.id ||
-        null
-      );
-    } catch (error) {
-      console.error("User Parse Error:", error);
-      return null;
-    }
-  };
-
-  // ==========================================
+  // =====================================================
   // GET PROFILE
-  // ==========================================
+  // =====================================================
 
   const getProfile = async () => {
-    const token = getToken();
-
-    if (!token) {
-      toast.error("Please login first");
-      navigate("/login");
-      return;
-    }
-
-    const userId = getUserId();
-
-    console.log("USER ID:", userId);
-
-    if (!userId) {
-      toast.error("User ID not found. Please login again");
-
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("userId");
-
-      navigate("/login");
-      return;
-    }
-
     try {
       setLoading(true);
 
-      const response = await axios.get(
-        `${API_URL}/user/profile/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await api.get(
+        "/user/profile"
       );
 
-      console.log("PROFILE RESPONSE:", response.data);
+      console.log(
+        "PROFILE RESPONSE:",
+        response.data
+      );
 
-      if (!response.data.success) {
-        toast.error(
-          response.data.message ||
-            "Unable to load profile"
-        );
-        return;
-      }
-
-      // ==========================================
-      // GET ACTUAL USER FROM DATABASE
-      // ==========================================
-
-      const profile = response.data.user;
-
-      console.log("DATABASE USER:", profile);
-      console.log("DATABASE NAME:", profile?.name);
+      const profile =
+        response.data?.user ||
+        response.data?.data ||
+        response.data;
 
       if (!profile) {
-        toast.error("Profile data not found");
-        return;
+        throw new Error(
+          "Profile data not found"
+        );
       }
-
-      // ==========================================
-      // SET USER
-      // ==========================================
 
       setUser(profile);
 
-      // ==========================================
-      // SET FORM
-      // ==========================================
-
       setFormData({
-        name: profile.name || "",
-        phone: profile.phone
-          ? profile.phone.toString()
+        name: profile?.name || "",
+        phone: profile?.phone
+          ? String(profile.phone)
           : "",
       });
-
-      // ==========================================
-      // UPDATE LOCAL STORAGE
-      // ==========================================
 
       localStorage.setItem(
         "user",
         JSON.stringify(profile)
       );
 
-      if (profile._id) {
-        localStorage.setItem(
-          "userId",
-          profile._id
-        );
-      }
-
     } catch (error) {
-      console.error("PROFILE ERROR:", error);
-
       console.error(
-        "STATUS:",
-        error.response?.status
+        "PROFILE ERROR:",
+        error
       );
 
-      console.error(
-        "BACKEND RESPONSE:",
-        error.response?.data
-      );
-
-      // ==========================================
-      // UNAUTHORIZED
-      // ==========================================
-
-      if (error.response?.status === 401) {
+      if (
+        error?.response?.status === 401
+      ) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        localStorage.removeItem("userId");
+        localStorage.removeItem("role");
 
         toast.error(
-          "Session expired. Please login again"
+          "Session expired. Please login again."
         );
 
-        navigate("/login");
-        return;
-      }
+        navigate("/login", {
+          replace: true,
+        });
 
-      // ==========================================
-      // FORBIDDEN
-      // ==========================================
-
-      if (error.response?.status === 403) {
-        toast.error("Access denied");
-        return;
-      }
-
-      // ==========================================
-      // NOT FOUND
-      // ==========================================
-
-      if (error.response?.status === 404) {
-        toast.error("User profile not found");
         return;
       }
 
       toast.error(
-        error.response?.data?.message ||
+        error?.response?.data?.message ||
           "Unable to load profile"
       );
+
     } finally {
       setLoading(false);
     }
   };
 
-  // ==========================================
-  // INPUT CHANGE
-  // ==========================================
+  // =====================================================
+  // LOAD
+  // =====================================================
+
+  useEffect(() => {
+    getProfile();
+  }, []);
+
+  // =====================================================
+  // INPUT
+  // =====================================================
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const {
+      name,
+      value,
+    } = e.target;
 
-    // PHONE
     if (name === "phone") {
-      const onlyNumbers = value
+      const number = value
         .replace(/\D/g, "")
         .slice(0, 10);
 
       setFormData((prev) => ({
         ...prev,
-        phone: onlyNumbers,
-      }));
-
-      return;
-    }
-
-    // NAME
-    if (name === "name") {
-      const onlyLetters = value
-        .replace(/[^a-zA-Z\s]/g, "")
-        .slice(0, 50);
-
-      setFormData((prev) => ({
-        ...prev,
-        name: onlyLetters,
+        phone: number,
       }));
 
       return;
@@ -257,34 +145,28 @@ function Profile() {
     }));
   };
 
-  // ==========================================
+  // =====================================================
   // UPDATE PROFILE
-  // ==========================================
+  // =====================================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const token = getToken();
+    if (saving) return;
 
-    if (!token) {
-      toast.error("Please login first");
-      navigate("/login");
-      return;
-    }
+    const name =
+      formData.name.trim();
 
-    const userId = getUserId();
+    const phone =
+      formData.phone
+        .replace(/\D/g, "")
+        .slice(0, 10);
 
-    if (!userId) {
-      toast.error("User ID not found");
-      return;
-    }
-
-    const name = formData.name.trim();
-    const phone = formData.phone.trim();
-
-    // NAME VALIDATION
+    // NAME
     if (!name) {
-      toast.error("Name is required");
+      toast.error(
+        "Please enter your name"
+      );
       return;
     }
 
@@ -295,7 +177,14 @@ function Profile() {
       return;
     }
 
-    // PHONE VALIDATION
+    // PHONE
+    if (!phone) {
+      toast.error(
+        "Please enter your phone number"
+      );
+      return;
+    }
+
     if (phone.length !== 10) {
       toast.error(
         "Phone number must be 10 digits"
@@ -306,45 +195,35 @@ function Profile() {
     try {
       setSaving(true);
 
-      const requestData = {
-        name,
-        phone,
-      };
+      /*
+       * IMPORTANT
+       *
+       * Backend route:
+       *
+       * PUT /api/user/editprofile
+       *
+       * NOT:
+       *
+       * PUT /api/user/profile
+       */
 
-      console.log(
-        "UPDATE REQUEST:",
-        requestData
-      );
-
-      const response = await axios.put(
-        `${API_URL}/user/update/${userId}`,
-        requestData,
+      const response = await api.put(
+        "/user/editprofile",
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          name,
+          phone,
         }
       );
 
       console.log(
-        "UPDATE RESPONSE:",
+        "UPDATE PROFILE RESPONSE:",
         response.data
       );
 
-      if (!response.data.success) {
-        toast.error(
-          response.data.message ||
-            "Unable to update profile"
-        );
-        return;
-      }
-
-      // ==========================================
-      // UPDATED USER
-      // ==========================================
-
       const updatedUser =
-        response.data.user || {
+        response.data?.user ||
+        response.data?.data ||
+        {
           ...user,
           name,
           phone,
@@ -353,30 +232,22 @@ function Profile() {
       setUser(updatedUser);
 
       setFormData({
-        name: updatedUser.name || "",
-        phone: updatedUser.phone
-          ? updatedUser.phone.toString()
-          : "",
-      });
+        name:
+          updatedUser?.name ||
+          name,
 
-      // ==========================================
-      // UPDATE LOCAL STORAGE
-      // ==========================================
+        phone: updatedUser?.phone
+          ? String(updatedUser.phone)
+          : phone,
+      });
 
       localStorage.setItem(
         "user",
         JSON.stringify(updatedUser)
       );
 
-      if (updatedUser._id) {
-        localStorage.setItem(
-          "userId",
-          updatedUser._id
-        );
-      }
-
       toast.success(
-        response.data.message ||
+        response.data?.message ||
           "Profile updated successfully"
       );
 
@@ -386,42 +257,27 @@ function Profile() {
         error
       );
 
-      console.error(
-        "BACKEND RESPONSE:",
-        error.response?.data
-      );
-
-      // 401
-      if (error.response?.status === 401) {
+      if (
+        error?.response?.status === 401
+      ) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        localStorage.removeItem("userId");
+        localStorage.removeItem("role");
 
         toast.error(
-          "Session expired. Please login again"
+          "Session expired. Please login again."
         );
 
-        navigate("/login");
-        return;
-      }
+        navigate("/login", {
+          replace: true,
+        });
 
-      // 403
-      if (error.response?.status === 403) {
-        toast.error(
-          "You are not authorized"
-        );
-        return;
-      }
-
-      // 404
-      if (error.response?.status === 404) {
-        toast.error("User not found");
         return;
       }
 
       toast.error(
-        error.response?.data?.message ||
-          "Profile update failed"
+        error?.response?.data?.message ||
+          "Unable to update profile"
       );
 
     } finally {
@@ -429,230 +285,344 @@ function Profile() {
     }
   };
 
-  // ==========================================
+  // =====================================================
   // LOGOUT
-  // ==========================================
+  // =====================================================
 
-  const logout = () => {
+  const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("phone");
-    localStorage.removeItem("name");
-    localStorage.removeItem("otp");
+    localStorage.removeItem("role");
+
+    sessionStorage.removeItem(
+      "loginPhone"
+    );
+
+    sessionStorage.removeItem(
+      "loginName"
+    );
+
+    sessionStorage.removeItem(
+      "registerPhone"
+    );
+
+    sessionStorage.removeItem(
+      "registerName"
+    );
+
+    sessionStorage.removeItem(
+      "devOtp"
+    );
 
     toast.success(
       "Logged out successfully"
     );
 
-    navigate("/login");
+    navigate("/login", {
+      replace: true,
+    });
   };
 
-  // ==========================================
-  // LOAD PROFILE
-  // ==========================================
-
-  useEffect(() => {
-    getProfile();
-  }, []);
-
-  // ==========================================
+  // =====================================================
   // LOADING
-  // ==========================================
+  // =====================================================
 
   if (loading) {
     return (
-      <>
-        <Navbar />
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
 
-        <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
-          <div className="text-center">
+        <div className="text-center">
 
-            <div className="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
+          <Loader2
+            size={40}
+            className="animate-spin text-blue-600 mx-auto"
+          />
 
-            <h2 className="mt-5 text-xl font-bold text-gray-700 dark:text-white">
-              Loading Profile...
-            </h2>
+          <p className="text-gray-500 mt-3">
+            Loading profile...
+          </p>
 
-          </div>
         </div>
-      </>
+
+      </main>
     );
   }
 
-  // ==========================================
-  // PROFILE NOT FOUND
-  // ==========================================
+  // =====================================================
+  // INITIAL
+  // =====================================================
 
-  if (!user) {
-    return (
-      <>
-        <Navbar />
+  const initial =
+    formData.name
+      ? formData.name
+          .charAt(0)
+          .toUpperCase()
+      : "U";
 
-        <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 dark:bg-gray-900">
+  const role =
+    user?.role ||
+    localStorage.getItem("role") ||
+    "user";
 
-          <div className="text-center">
-
-            <div className="mb-5 text-6xl">
-              👤
-            </div>
-
-            <h1 className="text-3xl font-bold text-red-500">
-              Profile Not Found
-            </h1>
-
-            <p className="mt-2 text-gray-500">
-              Please login again
-            </p>
-
-            <button
-              onClick={() =>
-                navigate("/login")
-              }
-              className="mt-6 rounded-xl bg-green-600 px-7 py-3 font-semibold text-white hover:bg-green-700"
-            >
-              Login
-            </button>
-
-          </div>
-
-        </div>
-      </>
-    );
-  }
-
-  // ==========================================
-  // MAIN UI
-  // ==========================================
+  // =====================================================
+  // PAGE
+  // =====================================================
 
   return (
-    <>
-      <Navbar />
+    <main className="min-h-screen bg-gray-50">
 
-      <div className="min-h-screen bg-gray-100 px-4 py-10 dark:bg-gray-900">
+      {/* ================================================= */}
+      {/* HEADER */}
+      {/* ================================================= */}
 
-        <div className="mx-auto max-w-4xl">
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
 
-          <div className="overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-            {/* ==================================
-                HEADER
-            =================================== */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
 
-            <div className="bg-green-600 px-6 py-12 text-center">
+            <div>
 
-              {/* PROFILE INITIAL */}
-
-              <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-white text-5xl font-bold text-green-600 shadow-xl">
-
-                {user.name
-                  ? user.name
-                      .charAt(0)
-                      .toUpperCase()
-                  : "U"}
-
-              </div>
-
-              {/* NAME */}
-
-              <h1 className="mt-5 text-3xl font-bold text-white">
-
-                {user.name || "User"}
-
-              </h1>
-
-              {/* ROLE */}
-
-              <p className="mt-2 capitalize text-green-100">
-
-                {user.role || "user"}
-
+              <p className="text-blue-100 text-sm font-medium">
+                My Account
               </p>
 
-              {/* PHONE */}
+              <h1 className="text-3xl sm:text-4xl font-black mt-1">
+                My Profile
+              </h1>
 
-              <p className="mt-1 text-sm text-green-100">
-
-                +91{" "}
-                {user.phone || ""}
-
+              <p className="text-blue-100 mt-2">
+                Manage your account information
               </p>
 
             </div>
 
-            {/* ==================================
-                BODY
-            =================================== */}
+            <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center text-2xl font-black">
+              {initial}
+            </div>
 
-            <div className="p-6 md:p-10">
+          </div>
 
-              <div className="mb-8">
+        </div>
 
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Personal Information
-                </h2>
+      </section>
 
-                <p className="mt-1 text-gray-500 dark:text-gray-400">
-                  Update your account information
-                </p>
+      {/* ================================================= */}
+      {/* CONTENT */}
+      {/* ================================================= */}
 
-              </div>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-              {/* ==================================
-                  FORM
-              =================================== */}
+        <div className="grid lg:grid-cols-3 gap-6">
 
-              <form
-                onSubmit={handleSubmit}
-                className="space-y-6"
-              >
+          {/* ================================================= */}
+          {/* SIDEBAR */}
+          {/* ================================================= */}
 
-                {/* NAME */}
+          <div className="lg:col-span-1 space-y-5">
 
-                <div>
+            {/* USER CARD */}
 
-                  <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-200">
-                    Name
-                  </label>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
 
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    disabled={saving}
-                    placeholder="Enter your name"
-                    maxLength={50}
-                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-4 text-gray-900 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  />
+              <div className="flex items-center gap-4">
+
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xl font-black">
+                  {initial}
+                </div>
+
+                <div className="min-w-0">
+
+                  <h2 className="font-black text-gray-900 truncate">
+                    {formData.name ||
+                      "User"}
+                  </h2>
+
+                  <p className="text-sm text-gray-500">
+                    +91 {formData.phone}
+                  </p>
 
                 </div>
 
-                {/* PHONE */}
+              </div>
 
-                <div>
+              <div className="mt-5 flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 text-green-700 text-sm font-bold">
+                <ShieldCheck size={17} />
+                Account Verified
+              </div>
 
-                  <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-200">
-                    Phone Number
-                  </label>
+            </div>
 
-                  <div className="flex">
+            {/* MENU */}
 
-                    <span className="flex items-center rounded-l-xl border border-r-0 border-gray-300 bg-gray-100 px-4 font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                      +91
-                    </span>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-2">
 
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      disabled={saving}
-                      maxLength={10}
-                      inputMode="numeric"
-                      placeholder="Enter phone number"
-                      className="w-full rounded-r-xl border border-gray-300 bg-white px-4 py-4 text-gray-900 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    />
+              <Link
+                to="/profile"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 text-blue-600 font-bold"
+              >
+                <User size={19} />
+                My Profile
+              </Link>
+
+              <Link
+                to="/address"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition"
+              >
+                <MapPin size={19} />
+                My Addresses
+              </Link>
+
+              <Link
+                to="/wishlist"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition"
+              >
+                <Heart size={19} />
+                Wishlist
+              </Link>
+
+              <Link
+                to="/cart"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition"
+              >
+                <ShoppingCart size={19} />
+                My Cart
+              </Link>
+
+              <Link
+                to="/my-products"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition"
+              >
+                <Package size={19} />
+                My Products
+              </Link>
+
+              <div className="border-t my-2" />
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 font-medium transition"
+              >
+                <LogOut size={19} />
+                Logout
+              </button>
+
+            </div>
+
+          </div>
+
+          {/* ================================================= */}
+          {/* PROFILE FORM */}
+          {/* ================================================= */}
+
+          <div className="lg:col-span-2">
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+
+              {/* HEADER */}
+
+              <div className="p-5 sm:p-6 border-b border-gray-100">
+
+                <div className="flex items-center gap-3">
+
+                  <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <Edit3 size={21} />
+                  </div>
+
+                  <div>
+
+                    <h2 className="text-xl font-black text-gray-900">
+                      Personal Information
+                    </h2>
+
+                    <p className="text-sm text-gray-500">
+                      Update your account details
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* FORM */}
+
+              <form
+                onSubmit={handleSubmit}
+                className="p-5 sm:p-6"
+              >
+
+                <div className="grid sm:grid-cols-2 gap-5">
+
+                  {/* NAME */}
+
+                  <div>
+
+                    <label
+                      htmlFor="profile-name"
+                      className="block text-sm font-bold text-gray-700 mb-2"
+                    >
+                      Full Name
+                    </label>
+
+                    <div className="relative">
+
+                      <User
+                        size={18}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+
+                      <input
+                        id="profile-name"
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="Your name"
+                        disabled={saving}
+                        className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition disabled:opacity-60"
+                      />
+
+                    </div>
+
+                  </div>
+
+                  {/* PHONE */}
+
+                  <div>
+
+                    <label
+                      htmlFor="profile-phone"
+                      className="block text-sm font-bold text-gray-700 mb-2"
+                    >
+                      Mobile Number
+                    </label>
+
+                    <div className="relative">
+
+                      <Phone
+                        size={18}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+
+                      <input
+                        id="profile-phone"
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={
+                          handleChange
+                        }
+                        maxLength={10}
+                        inputMode="numeric"
+                        disabled={saving}
+                        className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition disabled:opacity-60"
+                      />
+
+                    </div>
 
                   </div>
 
@@ -660,62 +630,105 @@ function Profile() {
 
                 {/* ROLE */}
 
-                <div>
+                <div className="mt-5">
 
-                  <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-200">
-                    Role
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Account Type
                   </label>
 
-                  <input
-                    type="text"
-                    value={user.role || "user"}
-                    disabled
-                    className="w-full rounded-xl border border-gray-300 bg-gray-100 px-4 py-4 capitalize text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  />
+                  <div className="h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between">
+
+                    <span className="text-gray-700 font-medium capitalize">
+                      {role}
+                    </span>
+
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 font-bold capitalize">
+                      {role}
+                    </span>
+
+                  </div>
 
                 </div>
 
-                {/* UPDATE BUTTON */}
+                {/* SAVE */}
 
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="w-full rounded-xl bg-green-600 py-4 font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving
-                    ? "Updating..."
-                    : "Update Profile"}
-                </button>
+                <div className="mt-7 flex justify-end">
+
+                  <button
+                    type="submit"
+                    disabled={
+                      saving ||
+                      !formData.name.trim() ||
+                      formData.phone.length !== 10
+                    }
+                    className="w-full sm:w-auto px-6 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black flex items-center justify-center gap-2 shadow-lg shadow-blue-200 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                  >
+
+                    {saving ? (
+                      <>
+                        <Loader2
+                          size={19}
+                          className="animate-spin"
+                        />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={19} />
+                        Save Changes
+                      </>
+                    )}
+
+                  </button>
+
+                </div>
 
               </form>
 
-              {/* ==================================
-                  ACCOUNT ACTIONS
-              =================================== */}
+            </div>
 
-              <div className="mt-10 border-t border-gray-200 pt-8 dark:border-gray-700">
+            {/* ADDRESS */}
 
-                <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
-                  Account Actions
-                </h3>
+            <Link
+              to="/address"
+              className="mt-5 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center justify-between hover:border-blue-200 hover:shadow-md transition"
+            >
 
-                <button
-                  onClick={logout}
-                  className="w-full rounded-xl border-2 border-red-500 py-3 font-bold text-red-500 transition hover:bg-red-500 hover:text-white"
-                >
-                  Logout
-                </button>
+              <div className="flex items-center gap-4">
+
+                <div className="w-11 h-11 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
+                  <MapPin size={21} />
+                </div>
+
+                <div>
+
+                  <h3 className="font-black text-gray-900">
+                    Manage Addresses
+                  </h3>
+
+                  <p className="text-sm text-gray-500">
+                    Add or update your delivery
+                    addresses
+                  </p>
+
+                </div>
 
               </div>
 
-            </div>
+              <ArrowRight
+                size={20}
+                className="text-gray-400"
+              />
+
+            </Link>
 
           </div>
 
         </div>
 
-      </div>
-    </>
+      </section>
+
+    </main>
   );
 }
 

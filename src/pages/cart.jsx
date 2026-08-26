@@ -1,84 +1,101 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
-import { toast } from "react-hot-toast";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  FaMinus,
-  FaPlus,
-  FaTrash,
-  FaShoppingCart,
-} from "react-icons/fa";
-import Navbar from "../component/navbar";
-
-const API_URL = "https://e-comm-4-39jg.onrender.com/api";
+  ArrowLeft,
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  MessageCircle,
+  Package,
+  ShieldCheck,
+  RefreshCw,
+  Loader2,
+  AlertCircle,
+  ShoppingBag,
+} from "lucide-react";
+import { toast } from "react-hot-toast";
+import api from "../api/axios";
 
 function Cart() {
   const navigate = useNavigate();
 
-  const [cart, setCart] = useState([]);
+  // =====================================================
+  // STATE
+  // =====================================================
+
+  const [cart, setCart] = useState(null);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(null);
+  const [error, setError] = useState("");
 
-  const token = localStorage.getItem("token");
+  const [updatingId, setUpdatingId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
+  const [clearLoading, setClearLoading] = useState(false);
+  const [inquiryLoading, setInquiryLoading] = useState(false);
 
-  // ==========================================
-  // GET CART
-  // ==========================================
-  const getCart = async () => {
-    if (!token) {
+  // =====================================================
+  // LOAD CART
+  // =====================================================
+
+  const loadCart = async () => {
+    const currentToken = localStorage.getItem("token");
+
+    if (!currentToken) {
       setLoading(false);
+      setCart(null);
+      setItems([]);
       return;
     }
 
     try {
       setLoading(true);
+      setError("");
 
-      const { data } = await axios.get(
-        `${API_URL}/cart/all`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await api.get("/cart");
 
-      console.log("Cart Response:", data);
+      console.log("GET CART RESPONSE:", response.data);
 
-      if (data.success) {
-        const cartProducts =
-          data.cart?.products ||
-          data.products ||
-          data.data ||
-          [];
+      const data =
+        response.data?.cart ||
+        response.data?.data ||
+        response.data;
 
-        setCart(
-          Array.isArray(cartProducts)
-            ? cartProducts
+      if (data && !Array.isArray(data)) {
+        setCart(data);
+
+        const cartItems = data.items || [];
+
+        setItems(
+          Array.isArray(cartItems)
+            ? cartItems
             : []
         );
       } else {
-        setCart([]);
-
-        toast.error(
-          data.message || "Unable to load cart"
-        );
+        setCart(null);
+        setItems([]);
       }
     } catch (error) {
-      console.error("Get Cart Error:", error);
+      console.error(
+        "GET CART ERROR:",
+        error?.response?.data || error.message
+      );
 
-      if (error.response?.status === 401) {
+      if (
+        error?.response?.status === 401 ||
+        error?.response?.status === 403
+      ) {
         localStorage.removeItem("token");
-        localStorage.removeItem("user");
 
-        toast.error("Please login again");
+        toast.error("Please login first");
 
         navigate("/login");
 
         return;
       }
 
-      toast.error(
-        error.response?.data?.message ||
+      setError(
+        error?.response?.data?.message ||
           "Unable to load cart"
       );
     } finally {
@@ -86,15 +103,140 @@ function Cart() {
     }
   };
 
-  // ==========================================
+  // =====================================================
+  // LOAD ON PAGE
+  // =====================================================
+
+  useEffect(() => {
+    loadCart();
+  }, []);
+
+  // =====================================================
+  // GET PRODUCT
+  // =====================================================
+
+  const getProduct = (item) => {
+    if (!item) return null;
+
+    return item.product || null;
+  };
+
+  // =====================================================
+  // GET PRODUCT ID
+  // =====================================================
+
+  const getProductId = (item) => {
+    const product = getProduct(item);
+
+    if (!product) return null;
+
+    if (typeof product === "string") {
+      return product;
+    }
+
+    return (
+      product._id ||
+      product.id ||
+      null
+    );
+  };
+
+  // =====================================================
+  // GET QUANTITY
+  // =====================================================
+
+  const getQuantity = (item) => {
+    return Number(item?.quantity || 1);
+  };
+
+  // =====================================================
+  // GET PRICE
+  // =====================================================
+
+  const getPrice = (item) => {
+    const product = getProduct(item);
+
+    return Number(product?.price || 0);
+  };
+
+  // =====================================================
+  // GET IMAGE
+  // =====================================================
+
+  const getImage = (item) => {
+    const product = getProduct(item);
+
+    let image =
+      product?.image ||
+      product?.images?.[0] ||
+      product?.thumbnail ||
+      "";
+
+    if (typeof image === "object") {
+      image =
+        image?.url ||
+        image?.secure_url ||
+        image?.path ||
+        "";
+    }
+
+    if (!image) {
+      return "";
+    }
+
+    const imageString = String(image);
+
+    // Full URL
+    if (
+      imageString.startsWith("data:") ||
+      imageString.startsWith("http://") ||
+      imageString.startsWith("https://")
+    ) {
+      return imageString;
+    }
+
+    const apiUrl =
+      import.meta.env.VITE_API_URL ||
+      "https://backend-2-ubju.onrender.com/api";
+
+    const baseUrl = apiUrl.replace(/\/api\/?$/, "");
+
+    return `${baseUrl}/${imageString.replace(/^\/+/, "")}`;
+  };
+
+  // =====================================================
+  // TOTALS
+  // =====================================================
+
+  const subtotal = useMemo(() => {
+    return items.reduce((total, item) => {
+      return (
+        total +
+        getPrice(item) * getQuantity(item)
+      );
+    }, 0);
+  }, [items]);
+
+  const grandTotal = subtotal;
+
+  const totalItems = useMemo(() => {
+    return items.reduce((total, item) => {
+      return total + getQuantity(item);
+    }, 0);
+  }, [items]);
+
+  // =====================================================
   // UPDATE QUANTITY
-  // ==========================================
+  // =====================================================
+
   const updateQuantity = async (
-    productId,
+    item,
     newQuantity
   ) => {
+    const productId = getProductId(item);
+
     if (!productId) {
-      toast.error("Product ID missing");
+      toast.error("Product ID not found");
       return;
     }
 
@@ -102,617 +244,1019 @@ function Cart() {
       return;
     }
 
-    try {
-      setUpdating(productId);
+    const product = getProduct(item);
 
-      const { data } = await axios.put(
-        `${API_URL}/cart/update/${productId}`,
-        {
-          quantity: newQuantity,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+    const stock = Number(
+      product?.stock ?? 999999
+    );
 
-      console.log("Update Cart Response:", data);
-
-      if (data.success) {
-        // Directly update frontend
-        const updatedProducts =
-          data.cart?.products;
-
-        if (Array.isArray(updatedProducts)) {
-          setCart(updatedProducts);
-        } else {
-          await getCart();
-        }
-      } else {
-        toast.error(
-          data.message ||
-            "Unable to update quantity"
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Update Cart Error:",
-        error
-      );
-
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-
-        toast.error("Please login again");
-
-        navigate("/login");
-
-        return;
-      }
-
+    if (
+      stock > 0 &&
+      newQuantity > stock
+    ) {
       toast.error(
-        error.response?.data?.message ||
-          "Unable to update quantity"
+        `Only ${stock} items available`
       );
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  // ==========================================
-  // REMOVE PRODUCT
-  // ==========================================
-  const removeProduct = async (productId) => {
-    if (!productId) {
-      toast.error("Product ID missing");
       return;
     }
 
     try {
-      setUpdating(productId);
+      setUpdatingId(productId);
 
-      /*
-        IMPORTANT:
-        Backend route is:
-
-        DELETE /cart/remove/:productId
-
-        NOT:
-
-        /cart/delete/:productId
-      */
-
-      const { data } = await axios.delete(
-        `${API_URL}/cart/remove/${productId}`,
+      const response = await api.put(
+        `/cart/update/${productId}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          quantity: newQuantity,
         }
       );
 
       console.log(
-        "Remove Cart Response:",
-        data
+        "UPDATE CART RESPONSE:",
+        response.data
       );
 
-      if (data.success) {
-        const updatedProducts =
-          data.cart?.products;
+      const updatedCart =
+        response.data?.cart ||
+        response.data?.data;
 
-        if (Array.isArray(updatedProducts)) {
-          setCart(updatedProducts);
-        } else {
-          setCart((prev) =>
-            prev.filter((item) => {
-              const product =
-                item.product || item;
+      if (updatedCart) {
+        setCart(updatedCart);
 
-              return (
-                product?._id?.toString() !==
-                productId.toString()
-              );
-            })
-          );
-        }
-
-        toast.success(
-          data.message ||
-            "Product removed from cart"
-        );
-      } else {
-        toast.error(
-          data.message ||
-            "Unable to remove product"
+        setItems(
+          Array.isArray(updatedCart.items)
+            ? updatedCart.items
+            : []
         );
       }
+
+      toast.success("Cart updated");
     } catch (error) {
       console.error(
-        "Remove Cart Error:",
-        error
+        "UPDATE CART ERROR:",
+        error?.response?.data ||
+          error.message
       );
 
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+      toast.error(
+        error?.response?.data?.message ||
+          "Unable to update cart"
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
-        toast.error("Please login again");
+  // =====================================================
+  // REMOVE ITEM
+  // =====================================================
 
-        navigate("/login");
+  const removeItem = async (item) => {
+    const productId = getProductId(item);
 
-        return;
+    if (!productId) {
+      toast.error("Product ID not found");
+      return;
+    }
+
+    try {
+      setRemovingId(productId);
+
+      const response = await api.delete(
+        `/cart/remove/${productId}`
+      );
+
+      console.log(
+        "REMOVE CART RESPONSE:",
+        response.data
+      );
+
+      const updatedCart =
+        response.data?.cart ||
+        response.data?.data;
+
+      if (updatedCart) {
+        setCart(updatedCart);
+
+        setItems(
+          Array.isArray(updatedCart.items)
+            ? updatedCart.items
+            : []
+        );
+      } else {
+        setItems((prev) =>
+          prev.filter(
+            (cartItem) =>
+              getProductId(cartItem) !==
+              productId
+          )
+        );
       }
 
+      toast.success(
+        "Product removed from cart"
+      );
+    } catch (error) {
+      console.error(
+        "REMOVE CART ERROR:",
+        error?.response?.data ||
+          error.message
+      );
+
       toast.error(
-        error.response?.data?.message ||
+        error?.response?.data?.message ||
           "Unable to remove product"
       );
     } finally {
-      setUpdating(null);
+      setRemovingId(null);
     }
   };
 
-  // ==========================================
+  // =====================================================
   // CLEAR CART
-  // ==========================================
-  const clearCart = async () => {
-    try {
-      setUpdating("clear");
+  // =====================================================
 
-      const { data } = await axios.delete(
-        `${API_URL}/cart/clear`,
+  const clearCart = async () => {
+    if (items.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to clear your cart?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setClearLoading(true);
+
+      await api.delete("/cart/clear");
+
+      setItems([]);
+      setCart(null);
+
+      toast.success(
+        "Cart cleared successfully"
+      );
+    } catch (error) {
+      console.error(
+        "CLEAR CART ERROR:",
+        error?.response?.data ||
+          error.message
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+          "Unable to clear cart"
+      );
+    } finally {
+      setClearLoading(false);
+    }
+  };
+
+  // =====================================================
+  // WHATSAPP INQUIRY
+  // =====================================================
+
+  const sendCartInquiry = async () => {
+    if (items.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    try {
+      setInquiryLoading(true);
+
+      const response = await api.post(
+        "/whatsapp/cart-inquiry",
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          items: items.map((item) => ({
+            productId: getProductId(item),
+            quantity: getQuantity(item),
+          })),
         }
       );
 
       console.log(
-        "Clear Cart Response:",
-        data
+        "WHATSAPP RESPONSE:",
+        response.data
       );
 
-      if (data.success) {
-        setCart([]);
+      const data =
+        response.data?.data ||
+        response.data?.inquiry ||
+        response.data;
 
-        toast.success(
-          data.message ||
-            "Cart cleared successfully"
+      // =================================================
+      // BACKEND GENERATED WHATSAPP URL
+      // =================================================
+
+      const whatsappUrl =
+        data?.whatsappUrl ||
+        response.data?.whatsappUrl;
+
+      if (whatsappUrl) {
+        window.open(
+          whatsappUrl,
+          "_blank",
+          "noopener,noreferrer"
         );
-      } else {
-        toast.error(
-          data.message ||
-            "Unable to clear cart"
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Clear Cart Error:",
-        error
-      );
-
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-
-        toast.error("Please login again");
-
-        navigate("/login");
 
         return;
       }
 
-      toast.error(
-        error.response?.data?.message ||
-          "Unable to clear cart"
+      // =================================================
+      // NUMBER + MESSAGE
+      // =================================================
+
+      const whatsappNumber =
+        data?.phone ||
+        data?.whatsappNumber ||
+        data?.number ||
+        response.data?.phone ||
+        response.data?.whatsappNumber;
+
+      const backendMessage =
+        data?.message ||
+        response.data?.message;
+
+      if (
+        whatsappNumber &&
+        backendMessage
+      ) {
+        const cleanNumber =
+          String(whatsappNumber).replace(
+            /\D/g,
+            ""
+          );
+
+        const url =
+          `https://wa.me/${cleanNumber}` +
+          `?text=${encodeURIComponent(
+            backendMessage
+          )}`;
+
+        window.open(
+          url,
+          "_blank",
+          "noopener,noreferrer"
+        );
+
+        return;
+      }
+
+      // =================================================
+      // SETTINGS FALLBACK
+      // =================================================
+
+      const settingsResponse =
+        await api.get(
+          "/whatsapp/settings"
+        );
+
+      const settings =
+        settingsResponse.data?.settings ||
+        settingsResponse.data?.data ||
+        settingsResponse.data;
+
+      const number =
+        settings?.phone ||
+        settings?.whatsappNumber ||
+        settings?.number;
+
+      if (!number) {
+        toast.error(
+          "WhatsApp number is not configured"
+        );
+
+        return;
+      }
+
+      const cleanNumber =
+        String(number).replace(
+          /\D/g,
+          ""
+        );
+
+      // =================================================
+      // CREATE MESSAGE
+      // =================================================
+
+      let messageText =
+        "Hello, I want to inquire about these products:\n\n";
+
+      items.forEach((item, index) => {
+        const product = getProduct(item);
+
+        const name =
+          product?.name || "Product";
+
+        const quantity =
+          getQuantity(item);
+
+        const price =
+          getPrice(item);
+
+        messageText +=
+          `${index + 1}. ${name}\n` +
+          `Quantity: ${quantity}\n` +
+          `Price: ₹${price.toLocaleString(
+            "en-IN"
+          )}\n\n`;
+      });
+
+      messageText +=
+        `Total: ₹${grandTotal.toLocaleString(
+          "en-IN"
+        )}`;
+
+      const url =
+        `https://wa.me/${cleanNumber}` +
+        `?text=${encodeURIComponent(
+          messageText
+        )}`;
+
+      window.open(
+        url,
+        "_blank",
+        "noopener,noreferrer"
       );
+    } catch (error) {
+      console.error(
+        "WHATSAPP INQUIRY ERROR:",
+        error?.response?.data ||
+          error.message
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+          "Unable to send inquiry"
+      );
+
+      if (
+        error?.response?.data?.message ===
+        "Please add a default address before sending inquiry"
+      ) {
+        navigate("/address");
+      }
     } finally {
-      setUpdating(null);
+      setInquiryLoading(false);
     }
   };
 
-  // ==========================================
-  // LOAD CART
-  // ==========================================
-  useEffect(() => {
-    getCart();
-  }, []);
-
-  // ==========================================
+  // =====================================================
   // LOADING
-  // ==========================================
+  // =====================================================
+
   if (loading) {
     return (
-      <>
-        <Navbar />
+      <main className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-          <div className="text-center">
-            <div className="w-14 h-14 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="h-7 w-40 bg-gray-200 rounded-lg animate-pulse" />
 
-            <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-200">
-              Loading Cart...
-            </p>
+          <div className="grid lg:grid-cols-3 gap-6 mt-8">
+
+            <div className="lg:col-span-2 space-y-4">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="bg-white rounded-2xl p-5 flex gap-4"
+                >
+                  <div className="w-28 h-28 bg-gray-200 rounded-xl animate-pulse" />
+
+                  <div className="flex-1 space-y-3">
+                    <div className="h-5 bg-gray-200 rounded w-2/3 animate-pulse" />
+
+                    <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse" />
+
+                    <div className="h-10 bg-gray-200 rounded w-32 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 h-80 animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-1/2" />
+              <div className="h-4 bg-gray-200 rounded mt-6" />
+              <div className="h-4 bg-gray-200 rounded mt-4" />
+              <div className="h-12 bg-gray-200 rounded-xl mt-8" />
+            </div>
+
           </div>
         </div>
-      </>
+      </main>
     );
   }
 
-  // ==========================================
-  // LOGIN
-  // ==========================================
+  // =====================================================
+  // NOT LOGIN
+  // =====================================================
+
+  const token = localStorage.getItem("token");
+
   if (!token) {
     return (
-      <>
-        <Navbar />
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center">
 
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-5">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-10 text-center">
-            <FaShoppingCart className="mx-auto text-6xl text-green-600" />
-
-            <h1 className="mt-5 text-3xl font-bold text-gray-900 dark:text-white">
-              Please Login
-            </h1>
-
-            <p className="mt-3 text-gray-500 dark:text-gray-400">
-              Login to view your cart
-            </p>
-
-            <button
-              onClick={() =>
-                navigate("/login")
-              }
-              className="mt-6 bg-green-600 hover:bg-green-700 text-white px-7 py-3 rounded-xl font-semibold"
-            >
-              Login
-            </button>
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <ShoppingCart size={40} />
           </div>
-        </div>
-      </>
-    );
-  }
 
-  // ==========================================
-  // EMPTY CART
-  // ==========================================
-  if (cart.length === 0) {
-    return (
-      <>
-        <Navbar />
+          <h1 className="text-2xl font-black text-gray-900 mt-6">
+            Login to View Cart
+          </h1>
 
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center px-5">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-12 text-center">
-            <FaShoppingCart className="mx-auto text-7xl text-gray-300" />
+          <p className="text-gray-500 mt-2 leading-6">
+            Please login to access your
+            shopping cart and manage your
+            products.
+          </p>
 
-            <h1 className="mt-5 text-3xl font-bold text-gray-900 dark:text-white">
-              Your Cart Is Empty
-            </h1>
-
-            <p className="mt-3 text-gray-500 dark:text-gray-400">
-              Add some products to your cart.
-            </p>
+          <div className="flex gap-3 mt-7">
 
             <Link
               to="/products"
-              className="mt-6 inline-block bg-green-600 hover:bg-green-700 text-white px-7 py-3 rounded-xl font-semibold"
+              className="flex-1 py-3 rounded-xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50"
             >
-              Browse Products
+              Continue Shopping
             </Link>
+
+            <Link
+              to="/login"
+              className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-center"
+            >
+              Login
+            </Link>
+
           </div>
         </div>
-      </>
+      </main>
     );
   }
 
-  // ==========================================
-  // TOTAL
-  // ==========================================
-  const total = cart.reduce(
-    (sum, item) => {
-      const product =
-        item.product || item;
+  // =====================================================
+  // ERROR
+  // =====================================================
 
-      const quantity =
-        Number(item.quantity) || 1;
+  if (error) {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center">
 
-      const price =
-        Number(product?.price) || 0;
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-red-50 text-red-500 flex items-center justify-center">
+            <AlertCircle size={40} />
+          </div>
 
-      return (
-        sum + price * quantity
-      );
-    },
-    0
-  );
+          <h1 className="text-2xl font-black text-gray-900 mt-5">
+            Something Went Wrong
+          </h1>
 
-  // ==========================================
-  // MAIN UI
-  // ==========================================
+          <p className="text-gray-500 mt-2">
+            {error}
+          </p>
+
+          <button
+            onClick={loadCart}
+            className="mt-6 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
+          >
+            <RefreshCw size={18} />
+            Try Again
+          </button>
+
+        </div>
+      </main>
+    );
+  }
+
+  // =====================================================
+  // EMPTY CART
+  // =====================================================
+
+  if (items.length === 0) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-blue-600"
+          >
+            <ArrowLeft size={18} />
+            Back
+          </button>
+
+          <div className="min-h-[65vh] flex items-center justify-center">
+
+            <div className="text-center max-w-md">
+
+              <div className="w-28 h-28 mx-auto rounded-[2rem] bg-blue-50 text-blue-600 flex items-center justify-center">
+                <ShoppingCart size={52} />
+              </div>
+
+              <h1 className="text-3xl font-black text-gray-900 mt-7">
+                Your Cart is Empty
+              </h1>
+
+              <p className="text-gray-500 mt-3 leading-7">
+                Looks like you haven't added
+                anything to your cart yet.
+                Explore our products and find
+                something you like.
+              </p>
+
+              <Link
+                to="/products"
+                className="inline-flex items-center gap-2 mt-7 px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black"
+              >
+                <ShoppingBag size={19} />
+                Start Shopping
+              </Link>
+
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // =====================================================
+  // MAIN
+  // =====================================================
+
   return (
-    <>
-      <Navbar />
+    <main className="min-h-screen bg-gray-50">
 
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-10 px-5">
-        <div className="max-w-7xl mx-auto">
+      {/* HEADER */}
 
-          {/* HEADER */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <section className="bg-white border-b border-gray-100">
 
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-              <FaShoppingCart className="inline mr-3 text-green-600" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-              My Cart
-            </h1>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+            <div>
+
+              <Link
+                to="/products"
+                className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 font-semibold"
+              >
+                <ArrowLeft size={17} />
+                Continue Shopping
+              </Link>
+
+              <h1 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3">
+                Shopping Cart
+              </h1>
+
+              <p className="text-gray-500 mt-1">
+                {totalItems}{" "}
+                {totalItems === 1
+                  ? "item"
+                  : "items"}{" "}
+                in your cart
+              </p>
+
+            </div>
 
             <button
               onClick={clearCart}
-              disabled={updating === "clear"}
-              className="flex items-center justify-center gap-2 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white px-5 py-3 rounded-xl font-semibold disabled:opacity-50"
+              disabled={clearLoading}
+              className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 font-bold disabled:opacity-50"
             >
-              <FaTrash />
+              {clearLoading ? (
+                <Loader2
+                  size={17}
+                  className="animate-spin"
+                />
+              ) : (
+                <Trash2 size={17} />
+              )}
 
-              {updating === "clear"
-                ? "Clearing..."
-                : "Clear Cart"}
+              Clear Cart
             </button>
 
           </div>
+        </div>
+      </section>
 
-          <div className="grid lg:grid-cols-3 gap-8">
+      {/* CONTENT */}
 
-            {/* =================================
-                CART PRODUCTS
-            ================================= */}
-            <div className="lg:col-span-2 space-y-5">
+      <section className="py-7 sm:py-10">
 
-              {cart.map((item) => {
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                const product =
-                  item.product || item;
+          <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
 
-                const productId =
-                  product?._id;
+            {/* ITEMS */}
 
-                const quantity =
-                  Number(item.quantity) || 1;
+            <div className="lg:col-span-2">
 
-                const image =
-                  Array.isArray(
-                    product?.image
-                  )
-                    ? product.image[0]
-                    : product?.image;
+              <div className="space-y-4">
 
-                const itemTotal =
-                  Number(product?.price || 0) *
-                  quantity;
+                {items.map((item, index) => {
 
-                return (
-                  <div
-                    key={productId}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5"
-                  >
+                  const product =
+                    getProduct(item);
 
-                    <div className="flex flex-col sm:flex-row gap-5">
+                  const productId =
+                    getProductId(item);
 
-                      {/* IMAGE */}
-                      <Link
-                        to={`/product/${productId}`}
-                        className="shrink-0"
-                      >
-                        <img
-                          src={
-                            image ||
-                            "/placeholder.jpg"
-                          }
-                          alt={
-                            product?.name ||
-                            "Product"
-                          }
-                          className="w-full sm:w-40 h-40 object-contain rounded-xl bg-gray-100 dark:bg-gray-700"
-                        />
-                      </Link>
+                  const quantity =
+                    getQuantity(item);
 
-                      {/* DETAILS */}
-                      <div className="flex-1">
+                  const price =
+                    getPrice(item);
+
+                  const image =
+                    getImage(item);
+
+                  const stock =
+                    Number(
+                      product?.stock ??
+                        999999
+                    );
+
+                  const isUpdating =
+                    updatingId ===
+                    productId;
+
+                  const isRemoving =
+                    removingId ===
+                    productId;
+
+                  return (
+                    <div
+                      key={
+                        productId ||
+                        index
+                      }
+                      className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5"
+                    >
+
+                      <div className="flex gap-4">
+
+                        {/* IMAGE */}
 
                         <Link
-                          to={`/product/${productId}`}
+                          to={`/products/${productId}`}
+                          className="w-24 h-24 sm:w-32 sm:h-32 shrink-0 rounded-2xl bg-gray-50 overflow-hidden flex items-center justify-center"
                         >
-                          <h2 className="text-xl font-bold text-gray-900 dark:text-white hover:text-green-600">
-                            {product?.name ||
-                              "Product"}
-                          </h2>
+                          {image ? (
+                            <img
+                              src={image}
+                              alt={
+                                product?.name ||
+                                "Product"
+                              }
+                              className="w-full h-full object-contain p-2"
+                              onError={(e) => {
+                                e.currentTarget.style.display =
+                                  "none";
+                              }}
+                            />
+                          ) : (
+                            <Package
+                              size={40}
+                              className="text-gray-300"
+                            />
+                          )}
                         </Link>
 
-                        <p className="text-gray-500 dark:text-gray-400 mt-2">
-                          {product?.brand ||
-                            "Brand"}
-                        </p>
+                        {/* INFO */}
 
-                        <p className="text-2xl font-bold text-green-600 mt-3">
-                          ₹
-                          {Number(
-                            product?.price ||
-                              0
-                          ).toLocaleString(
-                            "en-IN"
-                          )}
-                        </p>
+                        <div className="flex-1 min-w-0">
 
-                        {/* QUANTITY */}
-                        <div className="mt-5">
+                          <div className="flex justify-between gap-3">
 
-                          <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-                            Quantity
-                          </p>
+                            <div className="min-w-0">
 
-                          <div className="flex items-center gap-3">
+                              <Link
+                                to={`/products/${productId}`}
+                                className="font-black text-gray-900 text-base sm:text-lg hover:text-blue-600 line-clamp-2"
+                              >
+                                {product?.name ||
+                                  "Product"}
+                              </Link>
 
-                            {/* MINUS */}
+                              {product?.brand && (
+                                <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                                  {product.brand}
+                                </p>
+                              )}
+
+                            </div>
+
                             <button
                               onClick={() =>
-                                updateQuantity(
-                                  productId,
-                                  quantity - 1
-                                )
+                                removeItem(item)
                               }
                               disabled={
-                                quantity <= 1 ||
-                                updating ===
-                                  productId
+                                isRemoving
                               }
-                              className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-300 disabled:opacity-40"
+                              className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+                              title="Remove"
                             >
-                              <FaMinus />
-                            </button>
-
-                            {/* NUMBER */}
-                            <span className="w-12 h-10 flex items-center justify-center text-lg font-bold text-gray-900 dark:text-white border rounded-lg">
-                              {quantity}
-                            </span>
-
-                            {/* PLUS */}
-                            <button
-                              onClick={() =>
-                                updateQuantity(
-                                  productId,
-                                  quantity + 1
-                                )
-                              }
-                              disabled={
-                                updating ===
-                                productId ||
-                                quantity >=
-                                  Number(
-                                    product?.stock ||
-                                      0
-                                  )
-                              }
-                              className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-300 disabled:opacity-40"
-                            >
-                              <FaPlus />
+                              {isRemoving ? (
+                                <Loader2
+                                  size={18}
+                                  className="animate-spin"
+                                />
+                              ) : (
+                                <Trash2
+                                  size={18}
+                                />
+                              )}
                             </button>
 
                           </div>
 
-                          <p className="text-xs text-gray-500 mt-2">
-                            Available stock:{" "}
-                            {product?.stock ?? 0}
-                          </p>
+                          {/* PRICE */}
+
+                          <div className="mt-3">
+
+                            <span className="text-lg sm:text-xl font-black text-gray-900">
+                              ₹
+                              {price.toLocaleString(
+                                "en-IN"
+                              )}
+                            </span>
+
+                            <span className="text-xs text-gray-500 ml-2">
+                              per item
+                            </span>
+
+                          </div>
+
+                          {/* BOTTOM */}
+
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+
+                            {/* QUANTITY */}
+
+                            <div className="flex items-center">
+
+                              <button
+                                onClick={() =>
+                                  updateQuantity(
+                                    item,
+                                    quantity - 1
+                                  )
+                                }
+                                disabled={
+                                  quantity <= 1 ||
+                                  isUpdating
+                                }
+                                className="w-9 h-9 rounded-l-lg border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40"
+                              >
+                                <Minus size={15} />
+                              </button>
+
+                              <div className="w-12 h-9 border-y border-gray-200 flex items-center justify-center text-sm font-black">
+
+                                {isUpdating ? (
+                                  <Loader2
+                                    size={15}
+                                    className="animate-spin"
+                                  />
+                                ) : (
+                                  quantity
+                                )}
+
+                              </div>
+
+                              <button
+                                onClick={() =>
+                                  updateQuantity(
+                                    item,
+                                    quantity + 1
+                                  )
+                                }
+                                disabled={
+                                  quantity >= stock ||
+                                  isUpdating
+                                }
+                                className="w-9 h-9 rounded-r-lg border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40"
+                              >
+                                <Plus size={15} />
+                              </button>
+
+                            </div>
+
+                            {/* ITEM TOTAL */}
+
+                            <div className="text-left sm:text-right">
+
+                              <p className="text-xs text-gray-500">
+                                Item Total
+                              </p>
+
+                              <p className="font-black text-gray-900 text-lg">
+                                ₹
+                                {(
+                                  price *
+                                  quantity
+                                ).toLocaleString(
+                                  "en-IN"
+                                )}
+                              </p>
+
+                            </div>
+
+                          </div>
 
                         </div>
+                      </div>
+                    </div>
+                  );
+                })}
 
-                        {/* REMOVE */}
-                        <button
-                          onClick={() =>
-                            removeProduct(
-                              productId
-                            )
-                          }
-                          disabled={
-                            updating ===
-                            productId
-                          }
-                          className="mt-5 flex items-center gap-2 text-red-500 font-semibold hover:text-red-700 disabled:opacity-50"
-                        >
-                          <FaTrash />
+              </div>
 
-                          {updating ===
-                          productId
-                            ? "Removing..."
-                            : "Remove"}
-                        </button>
+              {/* SECURITY */}
+
+              <div className="grid sm:grid-cols-3 gap-3 mt-6">
+
+                <div className="bg-white border border-gray-100 rounded-2xl p-4">
+                  <ShieldCheck
+                    size={22}
+                    className="text-green-600"
+                  />
+
+                  <p className="font-black text-sm mt-2">
+                    Secure Shopping
+                  </p>
+
+                  <p className="text-xs text-gray-500 mt-1">
+                    Your information is protected
+                  </p>
+                </div>
+
+                <div className="bg-white border border-gray-100 rounded-2xl p-4">
+                  <RefreshCw
+                    size={22}
+                    className="text-blue-600"
+                  />
+
+                  <p className="font-black text-sm mt-2">
+                    Easy Management
+                  </p>
+
+                  <p className="text-xs text-gray-500 mt-1">
+                    Update quantity anytime
+                  </p>
+                </div>
+
+                <div className="bg-white border border-gray-100 rounded-2xl p-4">
+                  <MessageCircle
+                    size={22}
+                    className="text-green-600"
+                  />
+
+                  <p className="font-black text-sm mt-2">
+                    WhatsApp Support
+                  </p>
+
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ask about your products
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+            {/* SUMMARY */}
+
+            <aside className="lg:col-span-1">
+
+              <div className="lg:sticky lg:top-24">
+
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+
+                  {/* HEADER */}
+
+                  <div className="p-6 border-b border-gray-100">
+
+                    <h2 className="text-xl font-black text-gray-900">
+                      Cart Summary
+                    </h2>
+
+                  </div>
+
+                  {/* BODY */}
+
+                  <div className="p-6">
+
+                    <div className="space-y-4">
+
+                      <div className="flex justify-between gap-4 text-sm">
+
+                        <span className="text-gray-500">
+                          Items
+                        </span>
+
+                        <span className="font-bold text-gray-900">
+                          {totalItems}
+                        </span>
 
                       </div>
 
-                      {/* ITEM TOTAL */}
-                      <div className="sm:text-right">
+                      <div className="flex justify-between gap-4 text-sm">
 
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Item Total
-                        </p>
+                        <span className="text-gray-500">
+                          Subtotal
+                        </span>
 
-                        <p className="text-xl font-bold text-gray-900 dark:text-white mt-2">
+                        <span className="font-bold text-gray-900">
                           ₹
-                          {itemTotal.toLocaleString(
+                          {subtotal.toLocaleString(
                             "en-IN"
                           )}
-                        </p>
+                        </span>
+
+                      </div>
+
+                      <div className="flex justify-between gap-4 text-sm">
+
+                        <span className="text-gray-500">
+                          Shipping
+                        </span>
+
+                        <span className="font-bold text-green-600">
+                          Contact for details
+                        </span>
 
                       </div>
 
                     </div>
+
+                    <div className="border-t border-gray-100 my-5" />
+
+                    <div className="flex items-center justify-between">
+
+                      <span className="font-black text-gray-900">
+                        Estimated Total
+                      </span>
+
+                      <span className="text-2xl font-black text-blue-600">
+                        ₹
+                        {grandTotal.toLocaleString(
+                          "en-IN"
+                        )}
+                      </span>
+
+                    </div>
+
+                    {/* WHATSAPP */}
+
+                    <button
+                      onClick={sendCartInquiry}
+                      disabled={inquiryLoading}
+                      className="w-full mt-6 min-h-[54px] rounded-xl bg-green-600 hover:bg-green-700 text-white font-black flex items-center justify-center gap-2 transition disabled:opacity-60"
+                    >
+                      {inquiryLoading ? (
+                        <Loader2
+                          size={20}
+                          className="animate-spin"
+                        />
+                      ) : (
+                        <>
+                          <MessageCircle
+                            size={20}
+                          />
+                          Send WhatsApp Inquiry
+                        </>
+                      )}
+                    </button>
+
+                    <p className="text-xs text-gray-400 text-center mt-3 leading-5">
+                      Your cart details will be
+                      sent for inquiry on WhatsApp.
+                    </p>
+
                   </div>
-                );
-              })}
-
-            </div>
-
-            {/* =================================
-                ORDER SUMMARY
-            ================================= */}
-            <div className="lg:col-span-1">
-
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sticky top-5">
-
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  Order Summary
-                </h2>
-
-                <div className="flex justify-between py-3 border-b dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">
-                    Products
-                  </span>
-
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {cart.length}
-                  </span>
                 </div>
 
-                <div className="flex justify-between py-4">
-                  <span className="font-semibold text-lg text-gray-900 dark:text-white">
-                    Total
-                  </span>
+                {/* CONTINUE SHOPPING */}
 
-                  <span className="font-bold text-2xl text-green-600">
-                    ₹
-                    {total.toLocaleString(
-                      "en-IN"
-                    )}
-                  </span>
-                </div>
-<br />
-                 <a
-                href="https://wa.me/917230910907?text=Hello%20I%20want%20to%20inquire%20about%20your%20products"
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-lg border-2 border-green-700 bg-white px-7 py-3.5 font-semibold text-green-700 shadow-md transition hover:bg-green-700 hover:text-white dark:bg-gray-800 dark:text-green-400"
-              >
-                💬 WhatsApp Inquiry
-              </a>
-<br />
-                <button
-                  onClick={() =>
-                    navigate("/products")
-                  }
-                  className="mt-3 w-full border-2 border-gray-300 dark:border-gray-600 py-3 rounded-xl font-semibold text-gray-700 dark:text-gray-200 hover:border-green-600 hover:text-green-600"
+                <Link
+                  to="/products"
+                  className="mt-4 w-full min-h-[50px] bg-white border border-gray-200 rounded-xl flex items-center justify-center gap-2 font-bold text-gray-700 hover:bg-gray-50"
                 >
+                  <ShoppingBag size={18} />
                   Continue Shopping
-                </button>
+                </Link>
 
               </div>
-
-            </div>
+            </aside>
 
           </div>
         </div>
-      </div>
-    </>
+      </section>
+    </main>
   );
 }
 
