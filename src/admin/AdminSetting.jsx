@@ -35,6 +35,10 @@ const AdminSetting = () => {
 
   const [siteName, setSiteName] = useState("MyStore");
 
+  const [draftThemeMode, setDraftThemeMode] = useState(themeMode);
+
+  const [draftPrimaryColor, setDraftPrimaryColor] = useState(primaryColor);
+
   const [logoFile, setLogoFile] = useState(null);
 
   const [preview, setPreview] = useState("");
@@ -91,6 +95,8 @@ const AdminSetting = () => {
         );
       }
 
+      setDraftThemeMode(data.themeMode === "dark" ? "dark" : "light");
+
       // Primary color
       if (
         !localStorage.getItem("primary-color") &&
@@ -101,6 +107,10 @@ const AdminSetting = () => {
         setPrimaryColor(data.primaryColor);
       }
 
+      if (/^#[0-9a-fA-F]{6}$/.test(data.primaryColor || "")) {
+        setDraftPrimaryColor(data.primaryColor);
+      }
+
       // Site name
       setSiteName(
         data.siteName?.trim() || "MyStore"
@@ -108,7 +118,7 @@ const AdminSetting = () => {
 
       // Logo
       if (data.logo) {
-        const logoUrl = data.logo.startsWith("http")
+        const logoUrl = /^(https?:|data:)/i.test(data.logo)
           ? data.logo
           : `${API_URL}${data.logo}`;
 
@@ -140,21 +150,24 @@ const AdminSetting = () => {
       await axios.put(
         `${API_URL}/api/settings/appearance`,
         {
-          themeMode,
-          primaryColor,
+          themeMode: draftThemeMode,
+          primaryColor: draftPrimaryColor,
         },
         getConfig()
       );
 
       localStorage.setItem(
         "theme-mode",
-        themeMode
+        draftThemeMode
       );
 
       localStorage.setItem(
         "primary-color",
-        primaryColor
+        draftPrimaryColor
       );
+
+      setThemeMode(draftThemeMode);
+      setPrimaryColor(draftPrimaryColor);
 
       toast.success(
         "Theme and color updated successfully"
@@ -398,6 +411,9 @@ const AdminSetting = () => {
       );
 
       setSiteName(trimmedName);
+      window.dispatchEvent(new CustomEvent("site-name-updated", {
+        detail: trimmedName,
+      }));
 
       await fetchSettings();
     } catch (error) {
@@ -496,7 +512,7 @@ const AdminSetting = () => {
 
               <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
 
-                {themeMode === "dark" ? (
+                {draftThemeMode === "dark" ? (
                   <Moon
                     size={19}
                     className="text-blue-600"
@@ -515,7 +531,7 @@ const AdminSetting = () => {
                   </p>
 
                   <p className="mt-0.5 text-sm font-bold capitalize text-slate-800 dark:text-white">
-                    {themeMode} mode
+                    {draftThemeMode} mode
                   </p>
 
                 </div>
@@ -580,10 +596,10 @@ const AdminSetting = () => {
                       key={mode}
                       type="button"
                       onClick={() =>
-                        setThemeMode(mode)
+                        setDraftThemeMode(mode)
                       }
                       className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-bold capitalize transition ${
-                        themeMode === mode
+                        draftThemeMode === mode
                           ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50"
                           : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                       }`}
@@ -621,9 +637,9 @@ const AdminSetting = () => {
                 <input
                   id="primary-color"
                   type="color"
-                  value={primaryColor}
+                  value={draftPrimaryColor}
                   onChange={(event) =>
-                    setPrimaryColor(
+                    setDraftPrimaryColor(
                       event.target.value
                     )
                   }
@@ -631,9 +647,9 @@ const AdminSetting = () => {
                 />
 
                 <input
-                  value={primaryColor}
+                  value={draftPrimaryColor}
                   onChange={(event) =>
-                    setPrimaryColor(
+                    setDraftPrimaryColor(
                       event.target.value
                     )
                   }
@@ -683,10 +699,10 @@ const AdminSetting = () => {
               className="rounded-xl px-4 py-2 text-sm font-bold text-white"
               style={{
                 backgroundColor:
-                  primaryColor,
+                  draftPrimaryColor,
               }}
             >
-              {themeMode === "dark"
+              {draftThemeMode === "dark"
                 ? "Dark storefront"
                 : "Light storefront"}
             </div>
@@ -695,7 +711,7 @@ const AdminSetting = () => {
 
           <div
             className={`p-5 sm:p-6 ${
-              themeMode === "dark"
+              draftThemeMode === "dark"
                 ? "bg-slate-950"
                 : "bg-slate-50"
             }`}
@@ -707,7 +723,7 @@ const AdminSetting = () => {
                 className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl text-white"
                 style={{
                   backgroundColor:
-                    primaryColor,
+                    draftPrimaryColor,
                 }}
               >
 

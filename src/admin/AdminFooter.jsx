@@ -231,6 +231,10 @@ const AdminFooter = () => {
         } else {
           setForm(payload);
         }
+
+        window.dispatchEvent(new CustomEvent("site-name-updated", {
+          detail: payload.companyName,
+        }));
       } else {
         toast.success(
           response.data?.message ||

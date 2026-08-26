@@ -16,13 +16,11 @@ export function ThemeProvider({ children }) {
 
   const setThemeMode = (mode) => {
     const nextMode = mode === "dark" ? "dark" : "light";
-    localStorage.setItem("theme-mode", nextMode);
     setThemeModeState(nextMode);
   };
 
   const setPrimaryColor = (color) => {
     if (!/^#[0-9a-fA-F]{6}$/.test(color)) return;
-    localStorage.setItem("primary-color", color);
     setPrimaryColorState(color);
   };
 

@@ -55,7 +55,14 @@ function App() {
         <Route path="/category-products" element={<CategoryProducts />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/wishlist" element={<Wishlist />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/address" element={<Address />} />
         <Route
           path="/my-products"

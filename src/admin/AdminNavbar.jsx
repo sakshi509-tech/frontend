@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import api from "../api/axios";
 
 import {
   Menu,
@@ -30,6 +31,7 @@ const AdminNavbar = ({ onMenuClick }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [siteName, setSiteName] = useState("MyStore");
 
   const profileRef = useRef(null);
   const notificationRef = useRef(null);
@@ -65,6 +67,29 @@ const AdminNavbar = ({ onMenuClick }) => {
 
     return () => {
       window.removeEventListener("storage", loadUser);
+    };
+  }, []);
+
+  useEffect(() => {
+    const loadSiteName = async () => {
+      try {
+        const response = await api.get("/settings");
+        const name = response.data?.settings?.siteName?.trim();
+        if (name) setSiteName(name);
+      } catch (error) {
+        console.error("ADMIN SITE NAME ERROR:", error?.message);
+      }
+    };
+
+    const handleSiteNameUpdate = (event) => {
+      if (event.detail) setSiteName(event.detail);
+    };
+
+    loadSiteName();
+    window.addEventListener("site-name-updated", handleSiteNameUpdate);
+
+    return () => {
+      window.removeEventListener("site-name-updated", handleSiteNameUpdate);
     };
   }, []);
 
@@ -230,7 +255,7 @@ const AdminNavbar = ({ onMenuClick }) => {
 
               <div className="hidden sm:block">
                 <h1 className="text-lg font-bold text-slate-900 leading-none">
-                  MyStore
+                  {siteName}
                 </h1>
 
                 <p className="text-[10px] text-blue-600 font-semibold mt-1 uppercase tracking-wider">

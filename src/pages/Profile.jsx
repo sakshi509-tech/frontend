@@ -359,11 +359,6 @@ function Profile() {
           .toUpperCase()
       : "U";
 
-  const role =
-    user?.role ||
-    localStorage.getItem("role") ||
-    "user";
-
   // =====================================================
   // PAGE
   // =====================================================
@@ -494,7 +489,7 @@ function Profile() {
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition"
               >
                 <Package size={19} />
-                My Products
+                Dropshipping
               </Link>
 
               <div className="border-t my-2" />
@@ -623,28 +618,6 @@ function Profile() {
                       />
 
                     </div>
-
-                  </div>
-
-                </div>
-
-                {/* ROLE */}
-
-                <div className="mt-5">
-
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Account Type
-                  </label>
-
-                  <div className="h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between">
-
-                    <span className="text-gray-700 font-medium capitalize">
-                      {role}
-                    </span>
-
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 font-bold capitalize">
-                      {role}
-                    </span>
 
                   </div>
 

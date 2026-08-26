@@ -144,7 +144,7 @@ const Footer = () => {
     };
   }, []);
 
-  const logoSource = siteLogo && /^https?:\/\//i.test(siteLogo)
+  const logoSource = siteLogo && /^(https?:|data:)/i.test(siteLogo)
     ? siteLogo
     : siteLogo
       ? `${API_URL}${siteLogo.startsWith("/") ? siteLogo : `/${siteLogo}`}`
@@ -372,6 +372,13 @@ const Footer = () => {
               className="transition hover:translate-x-1 hover:text-white"
             >
               Wishlist
+            </Link>
+
+            <Link
+              to="/my-products"
+              className="transition hover:translate-x-1 hover:text-white"
+            >
+              Dropshipping
             </Link>
 
           </div>

@@ -434,7 +434,7 @@ function Navbar() {
     setLogo("");
   };
 
-  const logoSource = logo && /^https?:\/\//i.test(logo)
+  const logoSource = logo && /^(https?:|data:)/i.test(logo)
     ? logo
     : logo
       ? `${API_URL}${logo.startsWith("/") ? logo : `/${logo}`}`
