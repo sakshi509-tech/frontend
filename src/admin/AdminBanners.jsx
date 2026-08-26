@@ -16,6 +16,7 @@ import {
   Search,
   Monitor,
   Smartphone,
+  Upload,
 } from "lucide-react";
 
 // ======================================================
