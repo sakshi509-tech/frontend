@@ -13,7 +13,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Edit3,
-  Package
+  Store
 } from "lucide-react";
 
 import { toast } from "react-hot-toast";
@@ -482,6 +482,14 @@ function Profile() {
               >
                 <ShoppingCart size={19} />
                 My Cart
+              </Link>
+
+              <Link
+                to="/store-dashboard"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition"
+              >
+                <Store size={19} />
+                My Store
               </Link>
 
               <div className="border-t my-2" />

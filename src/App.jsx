@@ -23,6 +23,7 @@ import AdminFooter from "./admin/AdminFooter";
 import AdminWhatsapp from "./admin/AdminWhatsapp";
 import AdminUsers from "./admin/AdminUser";
 import AdminSetting from "./admin/AdminSetting";
+import StoreDashboard from "./pages/StoreDashboard";
 
 function NotFound() {
   return (
@@ -62,6 +63,14 @@ function App() {
           }
         />
         <Route path="/address" element={<Address />} />
+        <Route
+          path="/store-dashboard"
+          element={
+            <ProtectedRoute>
+              <StoreDashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />

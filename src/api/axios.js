@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getStoreSubdomain } from "../utils/storeUtils";
 
 const api = axios.create({
   baseURL:
@@ -21,6 +22,11 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization =
         `Bearer ${token}`;
+    }
+
+    const storeSubdomain = getStoreSubdomain();
+    if (storeSubdomain) {
+      config.headers["x-store-subdomain"] = storeSubdomain;
     }
 
     return config;
