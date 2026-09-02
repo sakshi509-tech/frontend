@@ -31,6 +31,32 @@ const normalizeStoreUrl = (value) => {
   return `https://${host}`;
 };
 
+const resolveStoreDisplayUrl = (siteName, currentStore) => {
+  if (currentStore?.storeUrl) {
+    return currentStore.storeUrl;
+  }
+
+  const normalizedSite = normalizeStoreUrl(siteName);
+  const slug = currentStore?.storeSlug || currentStore?.subdomain || currentStore?.username;
+  if (!slug) return "";
+
+  try {
+    const host = normalizedSite ? new URL(normalizedSite).hostname.replace(/^www\./i, "") : "";
+    if (host) return `https://${slug}.${host}`;
+  } catch (error) {
+    // ignore invalid URL and fall back below
+  }
+
+  const fallbackHost = String(normalizedSite || siteName || "")
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .split(/[/?#]/)[0]
+    .replace(/^\.+|\.+$/g, "");
+
+  if (!fallbackHost) return "";
+  return `https://${slug}.${fallbackHost}`;
+};
+
 const getImageUrl = (image) => {
   if (!image) return "";
   const value = typeof image === "object" ? image.url || image.secure_url || image.path || "" : String(image);
@@ -121,9 +147,11 @@ const StoreDashboard = () => {
 
   if (loading) return <div className="min-h-[70vh] grid place-items-center">Loading store...</div>;
 
+  const storeDisplayUrl = resolveStoreDisplayUrl(websiteName, store);
+
   return (
     <main className="max-w-6xl mx-auto px-4 py-10">
-      <div className="flex items-center gap-3 mb-8"><Store className="text-blue-600" /><h1 className="text-3xl font-bold">Your Store: {websiteName} . {store?.storeName || "Store"}</h1></div>
+      <div className="flex items-center gap-3 mb-8"><Store className="text-blue-600" /><h1 className="text-3xl font-bold">Your Store: {storeDisplayUrl ? <a href={storeDisplayUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline break-all">{storeDisplayUrl}</a> : `${websiteName} . ${store?.storeName || "Store"}`}</h1></div>
       <form onSubmit={saveStore} className="bg-white border rounded-2xl p-6 mb-8 grid gap-5 md:grid-cols-2">
         <label>Username<input required value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase() })} className="mt-2 w-full border rounded-lg p-3" /></label>
         <label>Store name<input required value={form.storeName} onChange={(e) => setForm({ ...form, storeName: e.target.value })} className="mt-2 w-full border rounded-lg p-3" /></label>
@@ -132,7 +160,7 @@ const StoreDashboard = () => {
         <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-5 gap-3">{Object.keys(initialTheme).map((key) => <label key={key} className="text-sm">{key.replace("Color", " color")}<input type="color" value={form.theme[key]} onChange={(e) => setForm({ ...form, theme: { ...form.theme, [key]: e.target.value } })} className="mt-2 h-10 w-full" /></label>)}</div>
         <button disabled={saving} className="md:col-span-2 inline-flex justify-center items-center gap-2 rounded-lg bg-blue-600 text-white py-3"><Save size={17} />{saving ? "Saving..." : "Save Store"}</button>
       </form>
-      {store && <p className="mb-6">Your Store: <strong>{websiteName} . {store.storeName}</strong></p>}
+      {store && storeDisplayUrl && <p className="mb-6">Your Store: <a href={storeDisplayUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline break-all"><strong>{storeDisplayUrl}</strong></a></p>}
       <section>
         <h2 className="text-xl font-bold mb-3">Products in my store</h2>
         <p className="text-gray-600 mb-4">Products selected from the main catalogue appear here.</p>
