@@ -72,7 +72,7 @@ const StoreDashboard = () => {
         <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-5 gap-3">{Object.keys(initialTheme).map((key) => <label key={key} className="text-sm">{key.replace("Color", " color")}<input type="color" value={form.theme[key]} onChange={(e) => setForm({ ...form, theme: { ...form.theme, [key]: e.target.value } })} className="mt-2 h-10 w-full" /></label>)}</div>
         <button disabled={saving} className="md:col-span-2 inline-flex justify-center items-center gap-2 rounded-lg bg-blue-600 text-white py-3"><Save size={17} />{saving ? "Saving..." : "Save Store"}</button>
       </form>
-      {store && <p className="mb-6">Your store: <a className="text-blue-600" href={`${window.location.protocol}//${store.subdomain}.${window.location.host.replace(/^www\./, "")}`}>{store.subdomain}.{window.location.host.replace(/^www\./, "")}</a></p>}
+      {store && <p className="mb-6">Your Store ({store.storeName}): <a className="text-blue-600" href={`${window.location.protocol}//${store.subdomain}.${window.location.host.replace(/^www\./, "")}`}>{store.subdomain}.{window.location.host.replace(/^www\./, "")}</a></p>}
       <section>
         <h2 className="text-xl font-bold mb-3">Cart and Wishlist products</h2>
         <p className="text-gray-600 mb-4">Products appear here automatically when you add them to your Cart or Wishlist.</p>
