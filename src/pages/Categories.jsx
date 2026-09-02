@@ -388,7 +388,7 @@ function Categories() {
                 return (
                   <Link
                     key={id}
-                    to={`/products?category=${encodeURIComponent(
+                    to={`/categories/${encodeURIComponent(
                       slug
                     )}`}
                     className="group bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"

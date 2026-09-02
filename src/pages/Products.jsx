@@ -91,6 +91,7 @@ function Products() {
   const navigate = useNavigate();
   const { store } = useStore() || {};
   const [searchParams, setSearchParams] = useSearchParams();
+  const showDropshippingOnly = searchParams.get("dropshipping") === "true";
 
   // ====================================================
   // STATES
@@ -301,11 +302,31 @@ function Products() {
 
     if (category !== "all") {
       result = result.filter((product) => {
+        const productCategory = product?.category;
+        const productCategoryId = getCategoryId(productCategory);
+        const productCategorySlug =
+          typeof productCategory === "object"
+            ? String(productCategory?.slug || "").toLowerCase()
+            : "";
+
+        const normalizedCategory = String(category).trim().toLowerCase();
+
         return (
-          getCategoryId(product?.category) ===
-          String(category)
+          productCategoryId === String(category) ||
+          productCategoryId === String(category).toLowerCase() ||
+          productCategorySlug === normalizedCategory
         );
       });
+    }
+
+    // ---------------- DROPSHIPPING ----------------
+
+    if (showDropshippingOnly) {
+      result = result.filter(
+        (product) =>
+          product?.isDropshipping === true ||
+          String(product?.isDropshipping) === "true"
+      );
     }
 
     // ---------------- MIN PRICE ----------------

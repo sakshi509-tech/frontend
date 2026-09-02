@@ -365,6 +365,13 @@ const Footer = () => {
             </Link>
 
             <Link
+              to="/products?dropshipping=true"
+              className="transition hover:translate-x-1 hover:text-white"
+            >
+              Dropshipping
+            </Link>
+
+            <Link
               to="/cart"
               className="transition hover:translate-x-1 hover:text-white"
             >
