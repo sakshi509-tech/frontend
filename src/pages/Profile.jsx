@@ -484,14 +484,6 @@ function Profile() {
                 My Cart
               </Link>
 
-              <Link
-                to="/my-products"
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition"
-              >
-                <Package size={19} />
-                Dropshipping
-              </Link>
-
               <div className="border-t my-2" />
 
               <button

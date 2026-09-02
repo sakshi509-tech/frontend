@@ -14,20 +14,15 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import Address from "./pages/Address";
-import MyProducts from "./pages/MyProducts";
 import AdminLayout from "./admin/AdminLayout";
 import AdminDashboard from "./admin/AdminDeshboard";
 import AdminProducts from "./admin/AdminProducts";
 import AdminCategories from "./admin/AdminCategories";
-import AdminSuppliers from "./admin/AdminSuppliers";
 import AdminBanners from "./admin/AdminBanners";
 import AdminFooter from "./admin/AdminFooter";
 import AdminWhatsapp from "./admin/AdminWhatsapp";
 import AdminUsers from "./admin/AdminUser";
 import AdminSetting from "./admin/AdminSetting";
-import DropshipperRegister from "./pages/DropshipperRegister";
-import DropshipperLogin from "./pages/DropshipperLogin";
-import DropshipperDashboard from "./pages/DropshipperDashboard";
 
 function NotFound() {
   return (
@@ -67,19 +62,6 @@ function App() {
           }
         />
         <Route path="/address" element={<Address />} />
-        <Route path="/my-products"
-          element={
-            <ProtectedRoute>
-              <MyProducts />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Dropshipper Routes */}
-        <Route path="/dropshipper-register" element={<DropshipperRegister />} />
-        <Route path="/dropshipper-login" element={<DropshipperLogin />} />
-        <Route path="/dropshipper-dashboard" element={<DropshipperDashboard />} />
-
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
@@ -87,7 +69,6 @@ function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="categories" element={<AdminCategories />} />
-            <Route path="suppliers" element={<AdminSuppliers />} />
             <Route path="banners" element={<AdminBanners />} />
             <Route path="footer" element={<AdminFooter />} />
             <Route path="whatsapp" element={<AdminWhatsapp />} />

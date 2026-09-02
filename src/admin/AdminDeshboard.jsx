@@ -32,7 +32,6 @@ const defaultDashboard = {
   products: {
     total: 0,
     active: 0,
-    dropshipping: 0,
     featured: 0,
     newArrival: 0,
     bestSeller: 0,
@@ -176,10 +175,6 @@ const AdminDashboard = () => {
         active: toNumber(
           data.products?.active ??
             data.totalProducts
-        ),
-
-        dropshipping: toNumber(
-          data.products?.dropshipping
         ),
 
         featured: toNumber(
@@ -480,27 +475,8 @@ const AdminDashboard = () => {
           </div>
         </section>
 
-        {/* =================================================
-            STORE / DROPSHIPPING
-        ================================================= */}
-
         <section className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Store Statistics
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <StatCard
-              title="Dropshipping"
-              value={
-                dashboard.products
-                  .dropshipping
-              }
-              icon={Truck}
-              description="Supplier products"
-              link="/admin/products?source=dropshipping"
-            />
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <StatCard
               title="Cart Items"
               value={

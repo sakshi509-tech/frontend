@@ -8,7 +8,6 @@ import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import { DropshipperProvider } from "./context/DropshipperContext";
 
 import "./index.css";
 
@@ -23,15 +22,9 @@ ReactDOM.createRoot(
 
         <ThemeProvider>
 
-          <DropshipperProvider>
-
-            <CartProvider>
-
-              <App />
-
-            </CartProvider>
-
-          </DropshipperProvider>
+          <CartProvider>
+            <App />
+          </CartProvider>
 
         </ThemeProvider>
 

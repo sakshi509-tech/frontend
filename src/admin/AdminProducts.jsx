@@ -24,9 +24,9 @@ import api from "../api/axios";
 
 function AdminProducts() {
   const [searchParams] = useSearchParams();
-  // =====================================================
-  // INITIAL FORM
-  // =====================================================
+  const [sourceFilter, setSourceFilter] = useState(
+    searchParams.get("source") || "all"
+  );
 
   const initialForm = {
     name: "",
@@ -41,30 +41,15 @@ function AdminProducts() {
     images: "",
     sku: "",
     active: true,
-    dropshipping: false,
-    supplier: "",
-    supplierName: "",
-    supplierProductId: "",
-    supplierUrl: "",
-    supplierPrice: "",
   };
-
-  // =====================================================
-  // STATES
-  // =====================================================
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState(
-    searchParams.get("source") || "all"
-  );
 
   const [showModal, setShowModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -161,26 +146,9 @@ function AdminProducts() {
   // INITIAL LOAD
   // =====================================================
 
-  const loadSuppliers = async () => {
-    try {
-      const response = await api.get("/supplier/all");
-      const data = response?.data;
-      const supplierData = Array.isArray(data?.suppliers)
-        ? data.suppliers
-        : Array.isArray(data)
-          ? data
-          : [];
-      setSuppliers(supplierData);
-    } catch (error) {
-      console.error("SUPPLIER LOAD ERROR:", error?.response?.data || error);
-      setSuppliers([]);
-    }
-  };
-
   useEffect(() => {
     loadProducts();
     loadCategories();
-    loadSuppliers();
   }, []);
 
   // =====================================================
@@ -298,7 +266,6 @@ function AdminProducts() {
         images: [],
         sku: item.sku.trim(),
         isActive: true,
-        isDropshipping: false,
         tags: [],
       }));
 
@@ -385,26 +352,6 @@ function AdminProducts() {
       active:
         product.active !== false,
 
-      dropshipping:
-        product.dropshipping === true,
-
-      supplier:
-        product.supplier?._id || product.supplier || "",
-
-      supplierName:
-        product.supplierName || "",
-
-      supplierProductId:
-        product.supplierProductId || "",
-
-      supplierUrl:
-        product.supplierUrl || "",
-
-      supplierPrice:
-        product.supplierPrice !== undefined &&
-        product.supplierPrice !== null
-          ? product.supplierPrice
-          : "",
     });
 
     setShowModal(true);
@@ -465,18 +412,6 @@ function AdminProducts() {
         "Discount price cannot be negative"
       );
       return false;
-    }
-
-    if (form.dropshipping) {
-      if (!form.supplier) {
-        toast.error("Please select a supplier for dropshipping product");
-        return false;
-      }
-
-      if (form.supplierPrice === "" || Number(form.supplierPrice) < 0 || Number.isNaN(Number(form.supplierPrice))) {
-        toast.error("Valid supplier price is required for dropshipping product");
-        return false;
-      }
     }
 
     return true;
@@ -550,24 +485,6 @@ function AdminProducts() {
 
         isActive:
           Boolean(form.active),
-
-        isDropshipping:
-          Boolean(form.dropshipping),
-
-        supplier:
-          form.dropshipping ? form.supplier : null,
-
-        supplierName:
-          form.supplierName.trim(),
-
-        supplierProductId:
-          form.supplierProductId.trim(),
-
-        supplierUrl:
-          form.supplierUrl.trim(),
-
-        supplierPrice:
-          form.dropshipping ? Number(form.supplierPrice) : 0,
 
         tags: [],
       };
@@ -811,7 +728,7 @@ function AdminProducts() {
 
         const matchesSource =
           sourceFilter === "all" ||
-          (sourceFilter === "dropshipping" && product.isDropshipping === true);
+          true;
 
         return (
           matchesSearch &&
@@ -1216,7 +1133,6 @@ function AdminProducts() {
               className="w-full h-11 px-4 rounded-xl bg-gray-50 border border-gray-200 outline-none focus:bg-white focus:border-blue-500 text-sm"
             >
               <option value="all">All Product Types</option>
-              <option value="dropshipping">Dropshipping Only</option>
             </select>
 
           </div>
@@ -2193,125 +2109,6 @@ function AdminProducts() {
                   </label>
 
                 </div>
-
-                {/* DROPSHIPPING */}
-                <div className="md:col-span-2">
-
-                  <label className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50">
-
-                    <input
-                      type="checkbox"
-                      name="dropshipping"
-                      checked={
-                        form.dropshipping
-                      }
-                      onChange={
-                        handleChange
-                      }
-                      className="w-4 h-4 accent-blue-600"
-                    />
-
-                    <div>
-
-                      <p className="text-sm font-bold text-gray-800">
-                        Dropshipping Product
-                      </p>
-
-                      <p className="text-[10px] text-gray-400 mt-0.5">
-                        Mark product as dropshipping.
-                      </p>
-
-                    </div>
-
-                  </label>
-
-                </div>
-
-                {form.dropshipping && (
-                  <>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-700 mb-2">
-                        Supplier *
-                      </label>
-                      <select
-                        name="supplier"
-                        value={form.supplier}
-                        onChange={handleChange}
-                        className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm"
-                      >
-                        <option value="">Select supplier</option>
-                        {suppliers.map((supplier) => (
-                          <option key={supplier._id} value={supplier._id}>
-                            {supplier.name}
-                            {supplier.companyName ? ` — ${supplier.companyName}` : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-2">
-                        Supplier Name
-                      </label>
-                      <input
-                        type="text"
-                        name="supplierName"
-                        value={form.supplierName}
-                        onChange={handleChange}
-                        placeholder="Supplier contact name"
-                        className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-2">
-                        Supplier Product ID
-                      </label>
-                      <input
-                        type="text"
-                        name="supplierProductId"
-                        value={form.supplierProductId}
-                        onChange={handleChange}
-                        placeholder="SKU or product ID from supplier"
-                        className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-700 mb-2">
-                        Supplier Product URL
-                      </label>
-                      <input
-                        type="url"
-                        name="supplierUrl"
-                        value={form.supplierUrl}
-                        onChange={handleChange}
-                        placeholder="https://example.com/product"
-                        className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-2">
-                        Supplier Price *
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">
-                          ₹
-                        </span>
-                        <input
-                          type="number"
-                          name="supplierPrice"
-                          min="0"
-                          value={form.supplierPrice}
-                          onChange={handleChange}
-                          placeholder="0"
-                          className="w-full h-11 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
 
               </div>
 

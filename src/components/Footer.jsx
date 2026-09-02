@@ -378,13 +378,6 @@ const Footer = () => {
               Wishlist
             </Link>
 
-            <Link
-              to="/my-products"
-              className="transition hover:translate-x-1 hover:text-white"
-            >
-              Dropshipping
-            </Link>
-
           </div>
         </div>
 

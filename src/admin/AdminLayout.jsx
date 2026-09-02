@@ -7,7 +7,6 @@ import {
   FolderTree,
   Image,
   PanelBottom,
-  Truck,
   MessageCircle,
   X,
   ChevronRight,
@@ -101,11 +100,6 @@ function AdminLayout() {
     {
       title: "BUSINESS",
       items: [
-        {
-          label: "Suppliers",
-          icon: Truck,
-          path: "/admin/suppliers",
-        },
         {
           label: "WhatsApp",
           icon: MessageCircle,
