@@ -18,7 +18,7 @@ const getImageUrl = (image) => {
   const value = typeof image === "object" ? image.url || image.secure_url || image.path || "" : String(image);
   if (!value) return "";
   if (/^https?:\/\//i.test(value) || value.startsWith("data:")) return value;
-  const baseUrl = (import.meta.env.VITE_API_URL || "https://backend-11-n6y4.onrender.com/api").replace(/\/api\/?$/, "");
+  const baseUrl = (import.meta.env.VITE_API_URL || "https://backend-12-xsvw.onrender.com/api").replace(/\/api\/?$/, "");
   return `${baseUrl}/${value.replace(/^\/+/, "")}`;
 };
 

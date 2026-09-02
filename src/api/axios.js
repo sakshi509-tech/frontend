@@ -4,7 +4,7 @@ import { getStoreSubdomain } from "../utils/storeUtils";
 const api = axios.create({
   baseURL:
     import.meta.env.VITE_API_URL ||
-    "https://backend-11-n6y4.onrender.com/api",
+    "https://backend-12-xsvw.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
