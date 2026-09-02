@@ -375,10 +375,6 @@ function ProductCard({ product }) {
       navigate("/send-otp");
       return;
     }
-    if (!store) {
-      navigate("/store-dashboard");
-      return;
-    }
     try {
       setAddingStore(true);
       await api.post("/store/me/products", { productId });
@@ -740,7 +736,7 @@ function ProductCard({ product }) {
             className="col-span-2 h-10 rounded-xl border border-gray-200 text-gray-700 hover:border-blue-600 hover:text-blue-600 font-bold text-sm flex items-center justify-center gap-2 transition disabled:opacity-50"
           >
             {addingStore ? <Loader2 size={17} className="animate-spin" /> : <ShoppingBag size={17} />}
-            {addingStore ? "Adding..." : store ? "Add to My Store" : "Create Dropshipping Store"}
+            {addingStore ? "Adding..." : "Add to My Store"}
           </button>
         </div>
       </div>
