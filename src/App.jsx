@@ -25,6 +25,9 @@ import AdminFooter from "./admin/AdminFooter";
 import AdminWhatsapp from "./admin/AdminWhatsapp";
 import AdminUsers from "./admin/AdminUser";
 import AdminSetting from "./admin/AdminSetting";
+import DropshipperRegister from "./pages/DropshipperRegister";
+import DropshipperLogin from "./pages/DropshipperLogin";
+import DropshipperDashboard from "./pages/DropshipperDashboard";
 
 function NotFound() {
   return (
@@ -64,14 +67,18 @@ function App() {
           }
         />
         <Route path="/address" element={<Address />} />
-        <Route
-          path="/my-products"
+        <Route path="/my-products"
           element={
             <ProtectedRoute>
               <MyProducts />
             </ProtectedRoute>
           }
         />
+
+        {/* Dropshipper Routes */}
+        <Route path="/dropshipper-register" element={<DropshipperRegister />} />
+        <Route path="/dropshipper-login" element={<DropshipperLogin />} />
+        <Route path="/dropshipper-dashboard" element={<DropshipperDashboard />} />
 
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
