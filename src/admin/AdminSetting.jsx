@@ -19,6 +19,24 @@ import { useTheme } from "../context/ThemeContext";
 
 const API_URL = "https://backend-12-xsvw.onrender.com";
 
+const normalizeSiteUrl = (value) => {
+  if (value === null || value === undefined) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+  const withoutProtocol = raw.replace(/^https?:\/\//i, "");
+  const withoutWww = withoutProtocol.replace(/^www\./i, "");
+  const candidate = withoutWww
+    .split(/[/?#]/)[0]
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "")
+    .toLowerCase();
+  if (!candidate) return "";
+  const host = candidate.includes(".") ? candidate : `${candidate}.in`;
+  return `https://${host}`;
+};
+
 const AdminSetting = () => {
   const {
     themeMode,
@@ -369,8 +387,7 @@ const AdminSetting = () => {
   // =====================================================
 
   const handleSaveSiteName = async () => {
-    const trimmedName =
-      siteName.trim();
+    const trimmedName = normalizeSiteUrl(siteName);
 
     if (!trimmedName) {
       toast.error(
@@ -380,9 +397,9 @@ const AdminSetting = () => {
       return;
     }
 
-    if (trimmedName.length > 100) {
+    if (trimmedName.length > 200) {
       toast.error(
-        "Website name cannot exceed 100 characters"
+        "Website name cannot exceed 200 characters"
       );
 
       return;

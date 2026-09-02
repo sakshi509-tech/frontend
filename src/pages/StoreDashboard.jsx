@@ -13,6 +13,24 @@ const initialTheme = {
   textColor: "#0f172a",
 };
 
+const normalizeStoreUrl = (value) => {
+  if (value === null || value === undefined) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+  const withoutProtocol = raw.replace(/^https?:\/\//i, "");
+  const withoutWww = withoutProtocol.replace(/^www\./i, "");
+  const candidate = withoutWww
+    .split(/[/?#]/)[0]
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "")
+    .toLowerCase();
+  if (!candidate) return "";
+  const host = candidate.includes(".") ? candidate : `${candidate}.in`;
+  return `https://${host}`;
+};
+
 const getImageUrl = (image) => {
   if (!image) return "";
   const value = typeof image === "object" ? image.url || image.secure_url || image.path || "" : String(image);
@@ -60,7 +78,12 @@ const StoreDashboard = () => {
 
   const saveStore = async (event) => {
     event.preventDefault();
-    const payload = { ...form, username: form.username.trim().toLowerCase(), storeSlug: form.storeSlug.trim().toLowerCase(), subdomain: form.storeSlug.trim().toLowerCase() };
+    const normalizedStoreName = normalizeStoreUrl(form.storeName);
+    if (!normalizedStoreName) {
+      toast.error("Store name must be a valid URL-like name");
+      return;
+    }
+    const payload = { ...form, storeName: normalizedStoreName, username: form.username.trim().toLowerCase(), storeSlug: form.storeSlug.trim().toLowerCase(), subdomain: form.storeSlug.trim().toLowerCase() };
     setSaving(true);
     try {
       const response = await api.post("/store/me", payload);
