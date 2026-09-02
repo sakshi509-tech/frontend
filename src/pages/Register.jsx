@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-const API_URL = "https://backend-10-14nm.onrender.com";
+const API_URL = "https://backend-11-n6y4.onrender.com";
 
 const SendOtp = () => {
   const navigate = useNavigate();

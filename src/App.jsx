@@ -62,6 +62,8 @@ function App() {
         <Route path="/verify-otp" element={<Login />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ProductDetails />} />
+        <Route path="/store/:slug" element={<Products />} />
+        <Route path="/store/:slug/products/:id" element={<ProductDetails />} />
         <Route path="/productdetails" element={<ProductDetails />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/category" element={<Categories />} />

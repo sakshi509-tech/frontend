@@ -54,7 +54,7 @@ const getImageUrl = (image) => {
 
   const baseUrl =
     import.meta.env.VITE_API_URL ||
-    "https://backend-10-14nm.onrender.com/api";
+    "https://backend-11-n6y4.onrender.com/api";
 
   // Remove /api from API URL
   const serverUrl = baseUrl.replace(/\/api\/?$/, "");

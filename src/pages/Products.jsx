@@ -6,6 +6,7 @@ import {
   X,
   Heart,
   ShoppingCart,
+  ShoppingBag,
   Eye,
   ChevronDown,
   Grid3X3,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import { useStore } from "../context/StoreContext";
 
 // ======================================================
 // HELPERS
@@ -47,7 +49,7 @@ const getImageUrl = (image) => {
   }
 
   const baseUrl = (
-    import.meta.env.VITE_API_URL || "https://backend-10-14nm.onrender.com/api"
+    import.meta.env.VITE_API_URL || "https://backend-11-n6y4.onrender.com/api"
   ).replace(/\/api\/?$/, "");
 
   return `${baseUrl}/${value.replace(/^\/+/, "")}`;
@@ -87,6 +89,7 @@ const getCategoryId = (category) => {
 
 function Products() {
   const navigate = useNavigate();
+  const { store } = useStore() || {};
   const [searchParams, setSearchParams] = useSearchParams();
 
   // ====================================================
@@ -117,6 +120,7 @@ function Products() {
 
   const [cartLoading, setCartLoading] = useState(null);
   const [wishlistLoading, setWishlistLoading] = useState(null);
+  const [storeLoading, setStoreLoading] = useState(null);
 
   const [visibleCount, setVisibleCount] = useState(12);
 
@@ -563,6 +567,28 @@ function Products() {
     }
   };
 
+  const addToMyStore = async (product) => {
+    const token = localStorage.getItem("token");
+    const productId = getProductId(product);
+    if (!token) {
+      navigate("/send-otp");
+      return;
+    }
+    if (!store) {
+      navigate("/store-dashboard");
+      return;
+    }
+    try {
+      setStoreLoading(productId);
+      await api.post("/store/me/products", { productId });
+      toast.success("Added to your store");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Could not add product to store");
+    } finally {
+      setStoreLoading(null);
+    }
+  };
+
   // ====================================================
   // PRODUCT CARD
   // ====================================================
@@ -976,6 +1002,16 @@ function Products() {
                   Add
                 </>
               )}
+            </button>
+
+            <button
+              type="button"
+              disabled={storeLoading === productId}
+              onClick={() => addToMyStore(product)}
+              className="col-span-2 h-10 rounded-xl border border-gray-200 hover:border-blue-600 hover:text-blue-600 text-gray-700 font-bold text-sm flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+            >
+              {storeLoading === productId ? <Loader2 size={16} className="animate-spin" /> : <ShoppingBag size={16} />}
+              {store ? "Add to My Store" : "Create Dropshipping Store"}
             </button>
           </div>
         </div>

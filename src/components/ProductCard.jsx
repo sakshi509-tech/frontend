@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Heart,
   ShoppingCart,
+  ShoppingBag,
   MessageCircle,
   Star,
   Eye,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import { useStore } from "../context/StoreContext";
 
 // =====================================================
 // IMAGE URL HELPER
@@ -43,7 +45,7 @@ const getImageUrl = (image) => {
 
   const baseUrl =
     import.meta.env.VITE_API_URL ||
-    "https://backend-10-14nm.onrender.com/api";
+    "https://backend-11-n6y4.onrender.com/api";
 
   return `${baseUrl.replace(/\/api\/?$/, "")}/${String(
     image
@@ -56,6 +58,7 @@ const getImageUrl = (image) => {
 
 function ProductCard({ product }) {
   const navigate = useNavigate();
+  const { store } = useStore() || {};
 
   const [isWishlisted, setIsWishlisted] =
     useState(false);
@@ -65,6 +68,8 @@ function ProductCard({ product }) {
 
   const [loadingWishlist, setLoadingWishlist] =
     useState(false);
+
+  const [addingStore, setAddingStore] = useState(false);
 
   const [imageLoaded, setImageLoaded] =
     useState(false);
@@ -363,6 +368,28 @@ function ProductCard({ product }) {
     }
   };
 
+  const handleAddToStore = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!localStorage.getItem("token")) {
+      navigate("/send-otp");
+      return;
+    }
+    if (!store) {
+      navigate("/store-dashboard");
+      return;
+    }
+    try {
+      setAddingStore(true);
+      await api.post("/store/me/products", { productId });
+      toast.success("Added to your store");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Could not add product to store");
+    } finally {
+      setAddingStore(false);
+    }
+  };
+
   // =====================================================
   // WHATSAPP
   // =====================================================
@@ -527,6 +554,7 @@ function ProductCard({ product }) {
             <Eye size={17} />
             Quick View
           </button>
+
         </div>
       </div>
 
@@ -704,6 +732,16 @@ function ProductCard({ product }) {
               Chat
             </span>
           </a>
+
+          <button
+            type="button"
+            onClick={handleAddToStore}
+            disabled={addingStore}
+            className="col-span-2 h-10 rounded-xl border border-gray-200 text-gray-700 hover:border-blue-600 hover:text-blue-600 font-bold text-sm flex items-center justify-center gap-2 transition disabled:opacity-50"
+          >
+            {addingStore ? <Loader2 size={17} className="animate-spin" /> : <ShoppingBag size={17} />}
+            {addingStore ? "Adding..." : store ? "Add to My Store" : "Create Dropshipping Store"}
+          </button>
         </div>
       </div>
 
