@@ -41,7 +41,7 @@ export const StoreProvider = ({ children }) => {
     if (!store) return undefined;
     const root = document.documentElement;
     Object.entries(store.theme || {}).forEach(([key, value]) => {
-      const cssName = `--store-${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
+      const cssName = `--${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
       root.style.setProperty(cssName, value);
     });
     const previousTitle = document.title;

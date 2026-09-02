@@ -21,6 +21,7 @@ import { toast } from "react-hot-toast";
 
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { useStore } from "../context/StoreContext";
 
 const API_URL = (
   import.meta.env.VITE_API_URL ||
@@ -76,6 +77,7 @@ function Navbar() {
   // =====================================================
 
   const cartContext = useCart() || {};
+  const { store } = useStore() || {};
 
   const {
     cartCount = 0,
@@ -438,10 +440,12 @@ function Navbar() {
     setLogo("");
   };
 
-  const logoSource = logo && /^(https?:|data:)/i.test(logo)
-    ? logo
-    : logo
-      ? `${API_URL}${logo.startsWith("/") ? logo : `/${logo}`}`
+  const activeLogo = store?.logo || logo;
+  const activeSiteName = store?.storeName || siteName;
+  const logoSource = activeLogo && /^(https?:|data:)/i.test(activeLogo)
+    ? activeLogo
+    : activeLogo
+      ? `${API_URL}${activeLogo.startsWith("/") ? activeLogo : `/${activeLogo}`}`
       : "";
 
   // =====================================================
@@ -472,7 +476,7 @@ function Navbar() {
 
                   <img
                     src={logoSource}
-                    alt={siteName}
+                    alt={activeSiteName}
                     onError={handleLogoError}
                     className="w-full h-full object-contain p-1.5"
                   />
@@ -496,7 +500,7 @@ function Navbar() {
             <div className="hidden sm:block">
 
               <h1 className="text-lg sm:text-xl font-black text-gray-900 leading-none tracking-tight">
-                {siteName}
+                {activeSiteName}
               </h1>
 
               <p className="text-[9px] sm:text-[10px] text-gray-400 font-medium mt-1">

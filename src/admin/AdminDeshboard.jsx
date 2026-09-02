@@ -9,7 +9,6 @@ import {
   RefreshCcw,
   ShieldCheck,
   UserCheck,
-  Truck,
   Star,
   TrendingUp,
   Plus,

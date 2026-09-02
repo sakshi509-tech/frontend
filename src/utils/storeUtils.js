@@ -5,8 +5,11 @@ export const getStoreSubdomain = () => {
   if (querySubdomain) return querySubdomain.trim().toLowerCase();
   if (hostname === "localhost" || hostname === "127.0.0.1") return "";
 
+  const configuredDomain = (import.meta.env.VITE_STORE_ROOT_DOMAIN || "frontend-q.com").toLowerCase();
+  if (!hostname.endsWith(`.${configuredDomain}`)) return "";
+
   const parts = hostname.split(".");
-  return parts.length > 2 ? parts[0] : "";
+  return parts.length === configuredDomain.split(".").length + 1 ? parts[0] : "";
 };
 
 export const getStoreBaseDomain = () => {

@@ -24,6 +24,7 @@ import AdminWhatsapp from "./admin/AdminWhatsapp";
 import AdminUsers from "./admin/AdminUser";
 import AdminSetting from "./admin/AdminSetting";
 import StoreDashboard from "./pages/StoreDashboard";
+import { useStore } from "./context/StoreContext";
 
 function NotFound() {
   return (
@@ -35,10 +36,25 @@ function NotFound() {
 
 function App() {
   const location = useLocation();
+  const { store, loading: storeLoading } = useStore();
   const isAdminPage = location.pathname.startsWith("/admin");
 
+  if (storeLoading && window.location.hostname.split(".").length > 2) {
+    return <div className="min-h-screen grid place-items-center">Loading store...</div>;
+  }
+
+  const storeStyle = store
+    ? {
+        "--brand-primary": store.theme?.primaryColor,
+        "--brand-secondary": store.theme?.secondaryColor,
+        "--brand-accent": store.theme?.accentColor,
+        "--brand-background": store.theme?.backgroundColor,
+        "--brand-text": store.theme?.textColor,
+      }
+    : {};
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={storeStyle}>
       {!isAdminPage && <Navbar />}
       <Routes>
         <Route path="/" element={<Home />} />

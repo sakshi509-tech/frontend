@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Store, Plus, Trash2, Save } from "lucide-react";
+import { Store, Save } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
 
@@ -14,7 +14,6 @@ const initialTheme = {
 
 const StoreDashboard = () => {
   const [store, setStore] = useState(null);
-  const [products, setProducts] = useState([]);
   const [selected, setSelected] = useState([]);
   const [form, setForm] = useState({ storeName: "", subdomain: "", logo: "", theme: initialTheme });
   const [loading, setLoading] = useState(true);
@@ -22,15 +21,13 @@ const StoreDashboard = () => {
 
   const load = async () => {
     try {
-      const [storeResponse, productResponse, selectedResponse] = await Promise.all([
+      const [storeResponse, selectedResponse] = await Promise.all([
         api.get("/store/me"),
-        api.get("/product/all?limit=100"),
         api.get("/store/me/products"),
       ]);
       const currentStore = storeResponse.data.store;
       setStore(currentStore);
       if (currentStore) setForm({ storeName: currentStore.storeName, subdomain: currentStore.subdomain, logo: currentStore.logo || "", theme: { ...initialTheme, ...currentStore.theme } });
-      setProducts(productResponse.data.products || []);
       setSelected(selectedResponse.data.products || []);
     } catch (error) {
       if (error?.response?.status !== 404) toast.error(error?.response?.data?.message || "Failed to load store data");
@@ -55,32 +52,14 @@ const StoreDashboard = () => {
     }
   };
 
-  const addProduct = async (product) => {
-    if (!store) return toast.error("Create your store first");
-    try {
-      await api.post(`/store/me/products/${product._id}`, {});
-      await load();
-      toast.success("Added to your store");
-    } catch (error) { toast.error(error?.response?.data?.message || "Could not add product"); }
-  };
-
-  const removeProduct = async (productId) => {
-    try {
-      await api.delete(`/store/me/products/${productId}`);
-      setSelected((items) => items.filter((item) => String(item.product?._id) !== String(productId)));
-      toast.success("Removed from your store");
-    } catch (error) { toast.error(error?.response?.data?.message || "Could not remove product"); }
-  };
-
   const updatePrice = async (productId, value) => {
     try {
-      await api.post(`/store/me/products/${productId}`, { sellingPrice: value === "" ? null : Number(value) });
+      await api.patch(`/store/me/products/${productId}`, { sellingPrice: value === "" ? null : Number(value) });
       setSelected((items) => items.map((item) => item.product?._id === productId ? { ...item, sellingPrice: value === "" ? null : Number(value) } : item));
       toast.success("Store price updated");
     } catch (error) { toast.error(error?.response?.data?.message || "Could not update price"); }
   };
 
-  const selectedIds = new Set(selected.map((item) => String(item.product?._id)));
   if (loading) return <div className="min-h-[70vh] grid place-items-center">Loading store...</div>;
 
   return (
@@ -94,9 +73,10 @@ const StoreDashboard = () => {
         <button disabled={saving} className="md:col-span-2 inline-flex justify-center items-center gap-2 rounded-lg bg-blue-600 text-white py-3"><Save size={17} />{saving ? "Saving..." : "Save Store"}</button>
       </form>
       {store && <p className="mb-6">Your store: <a className="text-blue-600" href={`${window.location.protocol}//${store.subdomain}.${window.location.host.replace(/^www\./, "")}`}>{store.subdomain}.{window.location.host.replace(/^www\./, "")}</a></p>}
-      <section className="grid md:grid-cols-2 gap-6">
-        <div><h2 className="text-xl font-bold mb-3">Choose products</h2><div className="grid gap-3">{products.filter((product) => !selectedIds.has(String(product._id))).map((product) => <div key={product._id} className="flex items-center justify-between border rounded-xl p-4"><span>{product.name}</span><button onClick={() => addProduct(product)} className="inline-flex items-center gap-1 text-blue-600"><Plus size={16} />Add</button></div>)}</div></div>
-        <div><h2 className="text-xl font-bold mb-3">Selected products</h2><div className="grid gap-3">{selected.map((item) => <div key={item._id} className="border rounded-xl p-4"><div className="flex items-center justify-between gap-3"><span>{item.product?.name}</span><button onClick={() => removeProduct(item.product?._id)} className="text-red-600"><Trash2 size={17} /></button></div><label className="block mt-3 text-sm text-gray-600">Custom selling price<input type="number" min="0" placeholder={item.product?.price} defaultValue={item.sellingPrice ?? ""} onBlur={(e) => updatePrice(item.product?._id, e.target.value)} className="mt-1 w-full border rounded-lg p-2" /></label></div>)}</div></div>
+      <section>
+        <h2 className="text-xl font-bold mb-3">Cart and Wishlist products</h2>
+        <p className="text-gray-600 mb-4">Products appear here automatically when you add them to your Cart or Wishlist.</p>
+        <div className="grid md:grid-cols-2 gap-3">{selected.map((item) => <div key={item._id} className="border rounded-xl p-4"><span>{item.product?.name}</span><label className="block mt-3 text-sm text-gray-600">Custom selling price<input type="number" min="0" placeholder={item.product?.price} defaultValue={item.sellingPrice ?? ""} onBlur={(e) => updatePrice(item.product?._id, e.target.value)} className="mt-1 w-full border rounded-lg p-2" /></label></div>)}</div>
       </section>
       {!store && <p className="mt-6 text-gray-600"><Link to="/profile" className="text-blue-600">Return to profile</Link></p>}
     </main>
