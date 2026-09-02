@@ -17,7 +17,7 @@ import {
 import { toast } from "react-hot-toast";
 import { useTheme } from "../context/ThemeContext";
 
-const API_URL = "https://backend-12-xsvw.onrender.com";
+const API_URL = "https://backend-13-7nod.onrender.com";
 
 const normalizeSiteUrl = (value) => {
   if (value === null || value === undefined) return "";
