@@ -20,7 +20,7 @@ import {
 
 import toast from "react-hot-toast";
 
-const API_URL = "https://backend-7-ct9x.onrender.com";
+const API_URL = "https://backend-10-14nm.onrender.com";
 
 const VerifyOtp = () => {
   const navigate = useNavigate();

@@ -17,7 +17,7 @@ import {
 import { toast } from "react-hot-toast";
 import { useTheme } from "../context/ThemeContext";
 
-const API_URL = "https://backend-7-ct9x.onrender.com";
+const API_URL = "https://backend-10-14nm.onrender.com";
 
 const AdminSetting = () => {
   const {

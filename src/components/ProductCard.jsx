@@ -43,7 +43,7 @@ const getImageUrl = (image) => {
 
   const baseUrl =
     import.meta.env.VITE_API_URL ||
-    "https://backend-7-ct9x.onrender.com/api";
+    "https://backend-10-14nm.onrender.com/api";
 
   return `${baseUrl.replace(/\/api\/?$/, "")}/${String(
     image
@@ -69,6 +69,33 @@ function ProductCard({ product }) {
   const [imageLoaded, setImageLoaded] =
     useState(false);
 
+  const productId =
+    product?._id || product?.id;
+
+  useEffect(() => {
+    if (!productId) return;
+
+    try {
+      const wishlist = JSON.parse(
+        localStorage.getItem("wishlist") ||
+          "[]"
+      );
+
+      const exists = wishlist.some(
+        (item) =>
+          item === productId ||
+          item?._id === productId
+      );
+
+      setIsWishlisted(exists);
+    } catch (error) {
+      console.log(
+        "Wishlist check error:",
+        error
+      );
+    }
+  }, [productId]);
+
   // =====================================================
   // SAFETY
   // =====================================================
@@ -78,9 +105,6 @@ function ProductCard({ product }) {
   // =====================================================
   // PRODUCT DATA
   // =====================================================
-
-  const productId =
-    product._id || product.id;
 
   const name =
     product.name || "Product";
@@ -145,30 +169,6 @@ function ProductCard({ product }) {
   // =====================================================
   // CHECK WISHLIST FROM LOCAL STORAGE
   // =====================================================
-
-  useEffect(() => {
-    if (!productId) return;
-
-    try {
-      const wishlist = JSON.parse(
-        localStorage.getItem("wishlist") ||
-          "[]"
-      );
-
-      const exists = wishlist.some(
-        (item) =>
-          item === productId ||
-          item?._id === productId
-      );
-
-      setIsWishlisted(exists);
-    } catch (error) {
-      console.log(
-        "Wishlist check error:",
-        error
-      );
-    }
-  }, [productId]);
 
   // =====================================================
   // PRODUCT DETAILS

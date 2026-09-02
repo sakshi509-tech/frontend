@@ -22,7 +22,11 @@ import { toast } from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 
-const API_URL = "https://backend-7-ct9x.onrender.com";
+const API_URL = (
+  import.meta.env.VITE_API_URL ||
+  "https://backend-10-14nm.onrender.com/api"
+).replace(/\/api\/?$/, "");
+const PUBLIC_API_TIMEOUT = 20000;
 
 function Navbar() {
   const navigate = useNavigate();
@@ -136,7 +140,7 @@ function Navbar() {
         const response = await axios.get(
           `${API_URL}/api/menu`,
           {
-            timeout: 5000,
+            timeout: PUBLIC_API_TIMEOUT,
           }
         );
 
@@ -259,7 +263,7 @@ function Navbar() {
     let mounted = true;
 
     axios
-      .get(`${API_URL}/api/settings`, { timeout: 5000 })
+      .get(`${API_URL}/api/settings`, { timeout: PUBLIC_API_TIMEOUT })
       .then((response) => {
         if (!mounted) return;
 

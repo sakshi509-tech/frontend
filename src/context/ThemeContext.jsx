@@ -3,7 +3,8 @@ import axios from "axios";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://backend-7-ct9x.onrender.com/api";
+  "https://backend-10-14nm.onrender.com/api";
+const PUBLIC_API_TIMEOUT = 20000;
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
@@ -25,7 +26,7 @@ export function ThemeProvider({ children }) {
   };
 
   useEffect(() => {
-    axios.get(`${API_URL}/settings`, { timeout: 5000 })
+    axios.get(`${API_URL}/settings`, { timeout: PUBLIC_API_TIMEOUT })
       .then(({ data }) => {
         const settings = data?.settings || {};
         if (!localStorage.getItem("theme-mode")) {
