@@ -32,19 +32,29 @@ const normalizeStoreUrl = (value) => {
 };
 
 const resolveStoreDisplayUrl = (siteName, currentStore) => {
-  if (currentStore?.storeUrl) {
-    return currentStore.storeUrl;
-  }
-
-  const normalizedSite = normalizeStoreUrl(siteName);
   const slug = currentStore?.storeSlug || currentStore?.subdomain || currentStore?.username;
   if (!slug) return "";
 
+  if (currentStore?.storeUrl) {
+    try {
+      const url = new URL(currentStore.storeUrl);
+      if (url.pathname && url.pathname !== "/") {
+        return url.toString();
+      }
+      return `${url.origin}/store/${encodeURIComponent(slug)}`;
+    } catch (error) {
+      // fall through below
+    }
+  }
+
+  const normalizedSite = normalizeStoreUrl(siteName);
+  if (!normalizedSite) return "";
+
   try {
-    const host = normalizedSite ? new URL(normalizedSite).hostname.replace(/^www\./i, "") : "";
-    if (host) return `https://${slug}.${host}`;
+    const url = new URL(normalizedSite);
+    return `${url.origin}/store/${encodeURIComponent(slug)}`;
   } catch (error) {
-    // ignore invalid URL and fall back below
+    // fallback to a safe route if the site name is not a valid URL
   }
 
   const fallbackHost = String(normalizedSite || siteName || "")
@@ -54,7 +64,7 @@ const resolveStoreDisplayUrl = (siteName, currentStore) => {
     .replace(/^\.+|\.+$/g, "");
 
   if (!fallbackHost) return "";
-  return `https://${slug}.${fallbackHost}`;
+  return `https://${fallbackHost}/store/${encodeURIComponent(slug)}`;
 };
 
 const getImageUrl = (image) => {
